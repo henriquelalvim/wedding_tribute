@@ -29,6 +29,7 @@ function toCeremony(summary) {
     marriedAt: summary.marriedAt,
     groom: summary.groom,
     bride: summary.bride,
+    deployer: summary.deployer,
     groomVow: summary.groomVow,
     brideVow: summary.brideVow,
     dedication: summary.dedication,
@@ -131,6 +132,10 @@ export function useWedding(wallet) {
     if (!wallet.account || !ceremony) return "guest";
     if (sameAddress(wallet.account, ceremony.groom)) return "groom";
     if (sameAddress(wallet.account, ceremony.bride)) return "bride";
+    // The deployer signs no vows and can't propose, accept or withdraw — but their
+    // deposit message becomes the dedication, same as the couple's, so the UI still
+    // needs to tell them apart from an ordinary guest.
+    if (sameAddress(wallet.account, ceremony.deployer)) return "deployer";
     return "guest";
   }, [wallet.account, ceremony]);
 

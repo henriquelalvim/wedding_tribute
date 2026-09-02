@@ -13,13 +13,15 @@ function isValidAmount(input) {
 }
 
 export default function GiftForm({ copy, chain, wallet, wedding, role }) {
-  const [amount, setAmount] = useState(copy.presets[0] ?? "0.01");
+  const [amount, setAmount] = useState("");
   const [message, setMessage] = useState("");
 
   const busy = wedding.tx.state === "pending";
   const messageTooLong = byteLength(message) > MAX_MESSAGE_BYTES;
   const amountOk = isValidAmount(amount);
-  const isCouple = role !== "guest";
+  // Groom, bride and whoever deployed the contract are all allowed to set the
+  // dedication read out at the wedding — worth telling them so before they send it.
+  const canDedicate = role !== "guest";
 
   const canSend = wallet.isConnected && wallet.isOnExpectedChain;
 
@@ -53,6 +55,7 @@ export default function GiftForm({ copy, chain, wallet, wedding, role }) {
               type="text"
               inputMode="decimal"
               autoComplete="off"
+              placeholder="0.01"
               value={amount}
               disabled={busy}
               onChange={(event) => setAmount(event.target.value)}
@@ -65,24 +68,6 @@ export default function GiftForm({ copy, chain, wallet, wedding, role }) {
             >
               {chain.currency.symbol}
             </span>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {copy.presets.map((preset) => (
-              <button
-                key={preset}
-                type="button"
-                className="data border px-3 py-2 text-xs transition-colors"
-                style={{
-                  borderColor:
-                    normalizeAmount(amount) === preset
-                      ? "var(--color-ink)"
-                      : "var(--color-rule)",
-                }}
-                onClick={() => setAmount(preset)}
-              >
-                {preset} {chain.currency.symbol}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -109,9 +94,10 @@ export default function GiftForm({ copy, chain, wallet, wedding, role }) {
             placeholder={copy.messagePlaceholder}
             onChange={(event) => setMessage(event.target.value)}
           />
-          {isCouple ? (
+          {canDedicate ? (
             <p className="mt-2 text-xs leading-relaxed text-ink-soft">
-              Você é do casal: esta mensagem vira a dedicatória lida na hora do sim.
+              Esta carteira pode gravar a dedicatória: esta mensagem vira o texto lido
+              na hora do sim.
             </p>
           ) : null}
         </div>

@@ -256,6 +256,19 @@
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "deployer",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       {
         "internalType": "string",
@@ -375,6 +388,11 @@
           {
             "internalType": "address",
             "name": "bride",
+            "type": "address"
+          },
+          {
+            "internalType": "address",
+            "name": "deployer",
             "type": "address"
           },
           {

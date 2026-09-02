@@ -27,8 +27,6 @@ export const content = {
     messageLabel: "Recado (opcional)",
     messagePlaceholder: "Uma linha para os noivos lerem depois",
     submit: "Enviar presente",
-    /** Suggested amounts, in ETH. */
-    presets: ["0.005", "0.01", "0.05"],
   },
 
   /** The message shown in the celebration modal, right after she says yes. */

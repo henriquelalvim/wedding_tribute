@@ -5,12 +5,14 @@ import VowField from "./VowField.jsx";
 
 /**
  * The signature block of the document: only the two people named above ever see
- * anything here. Guests get the gift form instead.
+ * anything here. Everyone else — guests and the deployer alike — gets the gift form
+ * instead. The deployer can fund the gift and set the dedication, but proposing,
+ * accepting and withdrawing are the couple's alone.
  */
 export default function SignatureBlock({ ceremony, role, wallet, wedding, chain }) {
   const [vow, setVow] = useState("");
 
-  if (!ceremony || role === "guest") return null;
+  if (!ceremony || (role !== "groom" && role !== "bride")) return null;
 
   const status = ceremony.status;
   const busy = wedding.tx.state === "pending";
