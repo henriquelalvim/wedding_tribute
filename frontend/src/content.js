@@ -44,6 +44,17 @@ export const content = {
 
   /** Fallback text when a vow was left blank on-chain. */
   emptyVow: "— sem palavras, só o sim —",
+
+  /** The standalone "?login=1" view — sent privately to the groom/bride so they can
+   * reveal their own address without seeing the rest of the site. */
+  addressReveal: {
+    eyebrow: "Acesso reservado",
+    title: "Entre e copie seu endereço",
+    intro:
+      "Entre com o Google (ou sua carteira) e copie o endereço que aparecer abaixo. Depois é só enviar essa cópia pra quem te mandou este link.",
+    addressLabel: "Seu endereço",
+    noOptions: "Nenhuma forma de entrar disponível neste navegador.",
+  },
 };
 
 export default content;
