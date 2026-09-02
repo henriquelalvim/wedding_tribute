@@ -1,17 +1,33 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { BrowserProvider } from "ethers";
-import { chain } from "../config.js";
+import { usePrivy, useWallets } from "@privy-io/react-auth";
+import { useSmartWallets } from "@privy-io/react-auth/smart-wallets";
+import { chain, hasPrivy } from "../config.js";
 import { friendlyError } from "../lib/format.js";
 
 const injected = () => (typeof window === "undefined" ? undefined : window.ethereum);
 
-/**
- * Wallet connection, current account and network switching.
- *
- * Reading the ceremony never goes through here — the page works with no wallet at
- * all. This hook only exists for the four transactions someone may want to sign.
- */
-export function useWallet() {
+const PREFERRED_SOURCE_KEY = "wedding:preferredWalletSource";
+
+function readPreferredSource() {
+  try {
+    return localStorage.getItem(PREFERRED_SOURCE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function writePreferredSource(source) {
+  try {
+    if (source) localStorage.setItem(PREFERRED_SOURCE_KEY, source);
+    else localStorage.removeItem(PREFERRED_SOURCE_KEY);
+  } catch {
+    // Private browsing or storage disabled — the session just won't survive a reload.
+  }
+}
+
+/** The MetaMask/injected-wallet path — today's exact logic, unchanged. */
+function useInjectedWallet() {
   const [account, setAccount] = useState(null);
   const [walletChainId, setWalletChainId] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -140,5 +156,145 @@ export function useWallet() {
     disconnect,
     switchNetwork,
     getSigner,
+  };
+}
+
+/**
+ * The Privy (Google/e-mail) path — an embedded wallet, created on first login, with
+ * gas for tributes paid by a sponsor rather than the guest. Only called when
+ * `hasPrivy` is true, which is the exact same constant that decides whether
+ * <PrivyProvider>/<SmartWalletsProvider> are mounted in main.jsx — so its hooks
+ * always have the context they need.
+ */
+function usePrivyWallet() {
+  const { ready, authenticated, login, logout } = usePrivy();
+  const { wallets } = useWallets();
+  const { client: smartWalletClient } = useSmartWallets();
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [error, setError] = useState("");
+
+  // Only "google"/"email" login methods are enabled (see main.jsx), so there is never
+  // an externally-connected wallet to confuse with the embedded one — wallets[0] is
+  // always the auto-created embedded wallet once authenticated.
+  const wallet = wallets[0];
+  const account = authenticated ? (wallet?.address ?? null) : null;
+
+  const connect = useCallback(async () => {
+    setIsConnecting(true);
+    setError("");
+    try {
+      await login();
+    } catch (err) {
+      setError(friendlyError(err));
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [login]);
+
+  const disconnect = useCallback(async () => {
+    try {
+      await logout();
+    } catch {
+      // Best effort — nothing else to fall back to on this path.
+    }
+  }, [logout]);
+
+  const getSigner = useCallback(async () => {
+    if (!wallet) throw new Error("Nenhuma carteira encontrada.");
+    const provider = await wallet.getEthereumProvider();
+    return new BrowserProvider(provider).getSigner();
+  }, [wallet]);
+
+  return {
+    hasWallet: ready,
+    account,
+    walletChainId: chain.id,
+    // An embedded wallet with only google/email login has no user-controlled network
+    // switcher — it just signs for whatever chain the app asks it to.
+    isOnExpectedChain: true,
+    isConnected: Boolean(account),
+    isConnecting,
+    error,
+    connect,
+    disconnect,
+    switchNetwork: async () => {},
+    getSigner,
+    smartWallet: {
+      isAvailable: Boolean(smartWalletClient) && Boolean(account),
+      async sendSponsored(to, data) {
+        return smartWalletClient.sendTransaction({ to, data, value: 0n });
+      },
+    },
+  };
+}
+
+const NO_SMART_WALLET = { isAvailable: false, async sendSponsored() {
+  throw new Error("Carteira inteligente indisponível.");
+} };
+
+/**
+ * Wallet connection, current account and network switching — MetaMask or, where
+ * configured, Google/e-mail via Privy. The returned shape never changes based on
+ * which source is active: everything downstream (useWedding, SignatureBlock,
+ * DocumentHeader, TributeForm) reads it the same way either way.
+ */
+export function useWallet() {
+  const injectedWallet = useInjectedWallet();
+  // `hasPrivy` is frozen at build time (see config.js) — this hook always runs the
+  // exact same number of times across the whole life of a given deployed bundle.
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const privyWallet = hasPrivy ? usePrivyWallet() : null;
+
+  const [preferredSource, setPreferredSource] = useState(readPreferredSource);
+
+  // Auto-detect which source is actually authorized, in case the stored preference
+  // is stale (e.g. the injected wallet was disconnected from outside the page).
+  useEffect(() => {
+    if (preferredSource === "privy" && !privyWallet?.isConnected) {
+      if (injectedWallet.isConnected) setPreferredSource("injected");
+    } else if (preferredSource === "injected" && !injectedWallet.isConnected) {
+      if (privyWallet?.isConnected) setPreferredSource("privy");
+    } else if (!preferredSource) {
+      if (privyWallet?.isConnected) setPreferredSource("privy");
+      else if (injectedWallet.isConnected) setPreferredSource("injected");
+    }
+  }, [preferredSource, injectedWallet.isConnected, privyWallet?.isConnected]);
+
+  const active = preferredSource === "privy" ? privyWallet : injectedWallet;
+
+  const connect = useCallback(async () => {
+    await injectedWallet.connect();
+    setPreferredSource("injected");
+    writePreferredSource("injected");
+  }, [injectedWallet]);
+
+  const connectWithGoogle = useCallback(async () => {
+    if (!privyWallet) return;
+    await privyWallet.connect();
+    setPreferredSource("privy");
+    writePreferredSource("privy");
+  }, [privyWallet]);
+
+  const disconnect = useCallback(async () => {
+    await active?.disconnect();
+    setPreferredSource(null);
+    writePreferredSource(null);
+  }, [active]);
+
+  return {
+    hasWallet: injectedWallet.hasWallet,
+    hasPrivy,
+    account: active?.account ?? null,
+    walletChainId: active?.walletChainId ?? null,
+    isOnExpectedChain: active?.isOnExpectedChain ?? false,
+    isConnected: Boolean(active?.isConnected),
+    isConnecting: Boolean(active?.isConnecting),
+    error: active?.error ?? "",
+    connect,
+    connectWithGoogle,
+    disconnect,
+    switchNetwork: active?.switchNetwork ?? injectedWallet.switchNetwork,
+    getSigner: active?.getSigner ?? injectedWallet.getSigner,
+    smartWallet: preferredSource === "privy" ? (privyWallet?.smartWallet ?? NO_SMART_WALLET) : NO_SMART_WALLET,
   };
 }

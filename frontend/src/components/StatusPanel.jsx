@@ -1,5 +1,5 @@
 import { STATUS } from "../config.js";
-import { formatDateTime, formatEth } from "../lib/format.js";
+import { formatDateTime } from "../lib/format.js";
 import CeremonySeal from "./CeremonySeal.jsx";
 
 const STAGES = [
@@ -109,17 +109,6 @@ export default function StatusPanel({
           );
         })}
       </ol>
-
-      <div
-        className="mt-8 flex items-baseline justify-between gap-4 border-t pt-5"
-        style={{ borderColor: "var(--color-rule)" }}
-      >
-        <span className="label">Presentes reunidos</span>
-        <span className="data text-xl sm:text-2xl">
-          {formatEth(ceremony.balance)}{" "}
-          <span className="text-sm text-ink-soft">{chain.currency.symbol}</span>
-        </span>
-      </div>
     </section>
   );
 }

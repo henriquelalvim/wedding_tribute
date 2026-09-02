@@ -1,23 +1,17 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "groom_",
-        "type": "address"
-      },
-      {
-        "internalType": "address",
-        "name": "bride_",
-        "type": "address"
-      }
-    ],
+    "inputs": [],
     "stateMutability": "nonpayable",
     "type": "constructor"
   },
   {
     "inputs": [],
-    "name": "EmptyGift",
+    "name": "AlreadySet",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyTribute",
     "type": "error"
   },
   {
@@ -37,12 +31,17 @@
   },
   {
     "inputs": [],
+    "name": "NameTooLong",
+    "type": "error"
+  },
+  {
+    "inputs": [],
     "name": "NotBride",
     "type": "error"
   },
   {
     "inputs": [],
-    "name": "NotCouple",
+    "name": "NotDeployer",
     "type": "error"
   },
   {
@@ -52,12 +51,7 @@
   },
   {
     "inputs": [],
-    "name": "NothingToWithdraw",
-    "type": "error"
-  },
-  {
-    "inputs": [],
-    "name": "TransferFailed",
+    "name": "TributeNotFound",
     "type": "error"
   },
   {
@@ -66,29 +60,11 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "from",
+        "name": "bride",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "message",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
       }
     ],
-    "name": "GiftReceived",
+    "name": "BrideSet",
     "type": "event"
   },
   {
@@ -97,23 +73,11 @@
       {
         "indexed": true,
         "internalType": "address",
-        "name": "to",
+        "name": "groom",
         "type": "address"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "amount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "timestamp",
-        "type": "uint256"
       }
     ],
-    "name": "GiftWithdrawn",
+    "name": "GroomSet",
     "type": "event"
   },
   {
@@ -139,12 +103,6 @@
       },
       {
         "indexed": false,
-        "internalType": "uint256",
-        "name": "totalAmount",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
         "internalType": "string",
         "name": "groomVow",
         "type": "string"
@@ -153,12 +111,6 @@
         "indexed": false,
         "internalType": "string",
         "name": "brideVow",
-        "type": "string"
-      },
-      {
-        "indexed": false,
-        "internalType": "string",
-        "name": "dedication",
         "type": "string"
       }
     ],
@@ -191,8 +143,71 @@
     "type": "event"
   },
   {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "TributeHidden",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "author",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "message",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256",
+        "name": "timestamp",
+        "type": "uint256"
+      }
+    ],
+    "name": "TributeReceived",
+    "type": "event"
+  },
+  {
     "inputs": [],
-    "name": "MAX_MESSAGE_BYTES",
+    "name": "MAX_MESSAGE_LENGTH",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "MAX_NAME_LENGTH",
     "outputs": [
       {
         "internalType": "uint256",
@@ -244,19 +259,6 @@
   },
   {
     "inputs": [],
-    "name": "dedication",
-    "outputs": [
-      {
-        "internalType": "string",
-        "name": "",
-        "type": "string"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "deployer",
     "outputs": [
       {
@@ -269,26 +271,53 @@
     "type": "function"
   },
   {
-    "inputs": [
-      {
-        "internalType": "string",
-        "name": "message",
-        "type": "string"
-      }
-    ],
-    "name": "depositGift",
-    "outputs": [],
-    "stateMutability": "payable",
-    "type": "function"
-  },
-  {
     "inputs": [],
-    "name": "getBalance",
+    "name": "getTributeCount",
     "outputs": [
       {
         "internalType": "uint256",
         "name": "",
         "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getTributes",
+    "outputs": [
+      {
+        "components": [
+          {
+            "internalType": "address",
+            "name": "author",
+            "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "message",
+            "type": "string"
+          },
+          {
+            "internalType": "uint256",
+            "name": "timestamp",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "hidden",
+            "type": "bool"
+          }
+        ],
+        "internalType": "struct WeddingGift.Tribute[]",
+        "name": "",
+        "type": "tuple[]"
       }
     ],
     "stateMutability": "view",
@@ -321,6 +350,19 @@
     "type": "function"
   },
   {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "id",
+        "type": "uint256"
+      }
+    ],
+    "name": "hideTribute",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
     "inputs": [],
     "name": "marriedAt",
     "outputs": [
@@ -342,6 +384,50 @@
       }
     ],
     "name": "propose",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
+        "name": "message",
+        "type": "string"
+      }
+    ],
+    "name": "sendTribute",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "bride_",
+        "type": "address"
+      }
+    ],
+    "name": "setBride",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "groom_",
+        "type": "address"
+      }
+    ],
+    "name": "setGroom",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
@@ -372,11 +458,6 @@
           },
           {
             "internalType": "uint256",
-            "name": "balance",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
             "name": "marriedAt",
             "type": "uint256"
           },
@@ -404,11 +485,6 @@
             "internalType": "string",
             "name": "brideVow",
             "type": "string"
-          },
-          {
-            "internalType": "string",
-            "name": "dedication",
-            "type": "string"
           }
         ],
         "internalType": "struct WeddingGift.Summary",
@@ -418,16 +494,5 @@
     ],
     "stateMutability": "view",
     "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "withdrawGift",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "stateMutability": "payable",
-    "type": "receive"
   }
 ]

@@ -2,20 +2,24 @@ import { chain, contractAddress, isConfigured } from "./config.js";
 import content from "./content.js";
 import { useWallet } from "./hooks/useWallet.js";
 import { useWedding } from "./hooks/useWedding.js";
+import { useTributes } from "./hooks/useTributes.js";
 import CelebrationModal from "./components/CelebrationModal.jsx";
 import Colophon from "./components/Colophon.jsx";
+import CoupleAdminPanel from "./components/CoupleAdminPanel.jsx";
 import CoupleHero from "./components/CoupleHero.jsx";
 import DocumentHeader from "./components/DocumentHeader.jsx";
-import GiftForm from "./components/GiftForm.jsx";
 import SetupNotice from "./components/SetupNotice.jsx";
 import SignatureBlock from "./components/SignatureBlock.jsx";
 import StatusPanel from "./components/StatusPanel.jsx";
+import TributeForm from "./components/TributeForm.jsx";
+import TributeWall from "./components/TributeWall.jsx";
 import TxBanner from "./components/TxBanner.jsx";
 import VowsPanel from "./components/VowsPanel.jsx";
 
 function Wedding() {
   const wallet = useWallet();
   const wedding = useWedding(wallet);
+  const tributes = useTributes();
 
   return (
     <div className="min-h-dvh">
@@ -55,18 +59,31 @@ function Wedding() {
           chain={chain}
         />
 
-        <GiftForm
-          copy={content.gift}
+        <TributeForm
+          copy={content.tribute}
           chain={chain}
           wallet={wallet}
           wedding={wedding}
-          role={wedding.role}
+          onSent={tributes.refresh}
+        />
+
+        <TributeWall
+          tributes={tributes.tributes}
+          isLoading={tributes.isLoading}
+          error={tributes.error}
+          explorer={chain.explorer}
         />
 
         <Colophon
           chain={chain}
           contractAddress={contractAddress}
           readError={wedding.readError}
+        />
+
+        <CoupleAdminPanel
+          role={wedding.role}
+          ceremony={wedding.ceremony}
+          wedding={wedding}
         />
       </main>
 

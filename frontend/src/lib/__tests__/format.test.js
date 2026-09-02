@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  byteLength,
-  formatEth,
-  friendlyError,
-  sameAddress,
-  shortAddress,
-} from "../format.js";
+import { byteLength, friendlyError, sameAddress, shortAddress } from "../format.js";
 
 describe("byteLength", () => {
   it("counts UTF-8 bytes, which is what the contract limits", () => {
@@ -40,18 +34,6 @@ describe("sameAddress", () => {
   });
 });
 
-describe("formatEth", () => {
-  it("formats wei as pt-BR ETH with stable decimals", () => {
-    expect(formatEth(10_000_000_000_000_000n)).toBe("0,0100");
-    expect(formatEth(0n)).toBe("0,0000");
-    expect(formatEth(2_000_000_000_000_000_000n)).toBe("2,0000");
-  });
-
-  it("treats a missing balance as zero", () => {
-    expect(formatEth(undefined)).toBe("0,0000");
-  });
-});
-
 describe("friendlyError", () => {
   it("translates a user rejection", () => {
     expect(friendlyError({ code: "ACTION_REJECTED" })).toBe("Transação cancelada na carteira.");
@@ -62,6 +44,18 @@ describe("friendlyError", () => {
       "Só a carteira da noiva pode responder.",
     );
     expect(friendlyError({ revert: { name: "InvalidStatus" } })).toContain("não está disponível");
+  });
+
+  it("translates the couple-assignment errors", () => {
+    expect(friendlyError({ revert: { name: "NotDeployer" } })).toContain("deployer");
+    expect(friendlyError({ revert: { name: "AlreadySet" } })).toContain("já foi definid");
+    expect(friendlyError({ revert: { name: "InvalidCouple" } })).toContain("Endereço");
+  });
+
+  it("translates the tribute errors", () => {
+    expect(friendlyError({ revert: { name: "NameTooLong" } })).toContain("64");
+    expect(friendlyError({ revert: { name: "EmptyTribute" } })).toContain("recado");
+    expect(friendlyError({ revert: { name: "TributeNotFound" } })).toContain("não");
   });
 
   it("truncates anything long and unrecognised", () => {

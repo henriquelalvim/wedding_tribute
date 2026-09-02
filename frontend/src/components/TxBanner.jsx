@@ -3,8 +3,9 @@ import { explorerTxUrl } from "../lib/format.js";
 const LABELS = {
   propose: "Pedido",
   accept: "Resposta",
-  deposit: "Presente",
-  withdraw: "Saque",
+  setGroom: "Noivo definido",
+  setBride: "Noiva definida",
+  tribute: "Homenagem",
 };
 
 const HEADLINE = {

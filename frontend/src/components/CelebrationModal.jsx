@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { celebrate } from "../lib/celebrate.js";
-import { explorerTxUrl, formatDateTime, formatEth } from "../lib/format.js";
+import { explorerTxUrl, formatDateTime } from "../lib/format.js";
 
 export default function CelebrationModal({ celebration, copy, couple, chain, emptyVow, onClose }) {
   const dialogRef = useRef(null);
@@ -85,28 +85,14 @@ export default function CelebrationModal({ celebration, copy, couple, chain, emp
               {celebration.brideVow ? `“${celebration.brideVow}”` : emptyVow}
             </p>
           </div>
-          {celebration.dedication ? (
-            <div className="border-l-2 pl-4" style={{ borderColor: "var(--color-gilt)" }}>
-              <p className="label">Dedicatória</p>
-              <p className="mt-1.5 leading-relaxed">{celebration.dedication}</p>
-            </div>
-          ) : null}
         </div>
 
         <dl
-          className="mt-6 grid grid-cols-2 gap-4 border-t pt-6 text-sm"
+          className="mt-6 border-t pt-6 text-center text-sm"
           style={{ borderColor: "var(--color-rule)" }}
         >
-          <div>
-            <dt className="label">Registrado em</dt>
-            <dd className="data mt-1.5">{formatDateTime(celebration.timestamp)}</dd>
-          </div>
-          <div>
-            <dt className="label">Presentes no cofre</dt>
-            <dd className="data mt-1.5">
-              {formatEth(celebration.totalAmount)} {chain.currency.symbol}
-            </dd>
-          </div>
+          <dt className="label">Registrado em</dt>
+          <dd className="data mt-1.5">{formatDateTime(celebration.timestamp)}</dd>
         </dl>
 
         <p className="mt-7 text-center text-sm text-ink-soft">{copy.signature}</p>

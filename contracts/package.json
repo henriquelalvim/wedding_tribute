@@ -11,6 +11,7 @@
     "deploy:local": "hardhat run scripts/deploy.js --network localhost",
     "deploy:sepolia": "hardhat run scripts/deploy.js --network baseSepolia",
     "deploy:base": "hardhat run scripts/deploy.js --network base",
+    "set-couple": "hardhat run scripts/set-couple.js",
     "export-abi": "node scripts/export-abi.js"
   },
   "devDependencies": {

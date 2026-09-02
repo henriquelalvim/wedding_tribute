@@ -1,46 +1,30 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Contract, JsonRpcProvider, parseEther } from "ethers";
+import { Contract, Interface } from "ethers";
 import abi from "../abi/WeddingGift.json";
-import {
-  chain,
-  contractAddress,
-  isConfigured,
-  POLL_INTERVAL_MS,
-  STATUS,
-} from "../config.js";
+import { contractAddress, POLL_INTERVAL_MS, STATUS } from "../config.js";
 import { friendlyError, sameAddress } from "../lib/format.js";
-
-// A single read-only provider, shared by every render. staticNetwork stops ethers
-// from re-checking the chain id before each call, which halves the requests we send
-// to the public RPC.
-const readProvider = isConfigured
-  ? new JsonRpcProvider(chain.rpcUrl, chain.id, { staticNetwork: true })
-  : null;
-const readContract = readProvider
-  ? new Contract(contractAddress, abi, readProvider)
-  : null;
+import { readContract, readProvider } from "../lib/readContract.js";
 
 const IDLE_TX = { state: "idle", action: null, hash: null, message: "" };
 
 function toCeremony(summary) {
   return {
     status: Number(summary.status),
-    balance: summary.balance,
     marriedAt: summary.marriedAt,
     groom: summary.groom,
     bride: summary.bride,
     deployer: summary.deployer,
     groomVow: summary.groomVow,
     brideVow: summary.brideVow,
-    dedication: summary.dedication,
   };
 }
 
 /**
- * The ceremony state, polled from the public RPC, plus the four transactions.
+ * The ceremony state, polled from the public RPC, plus its transactions: propose,
+ * accept, setGroom/setBride (the deployer's one-shot admin actions) and sendTribute.
  *
- * Reads never touch the wallet, so a guest with no MetaMask still sees the photo,
- * the status and the running total.
+ * Reads never touch the wallet, so a guest with no wallet at all still sees the
+ * photo, the status and the vows.
  */
 export function useWedding(wallet) {
   const [ceremony, setCeremony] = useState(null);
@@ -93,11 +77,9 @@ export function useWedding(wallet) {
     celebratedOnce.current = true;
     setCelebration({
       hash: hash ?? null,
-      totalAmount: summary.balance,
       timestamp: summary.marriedAt,
       groomVow: summary.groomVow,
       brideVow: summary.brideVow,
-      dedication: summary.dedication,
     });
   }, []);
 
@@ -130,11 +112,14 @@ export function useWedding(wallet) {
 
   const role = useMemo(() => {
     if (!wallet.account || !ceremony) return "guest";
+    // Comparing the connected wallet against a still-unset groom/bride (address(0))
+    // never matches a real wallet, so everyone correctly falls through to "guest"
+    // until the deployer actually assigns each address.
     if (sameAddress(wallet.account, ceremony.groom)) return "groom";
     if (sameAddress(wallet.account, ceremony.bride)) return "bride";
-    // The deployer signs no vows and can't propose, accept or withdraw — but their
-    // deposit message becomes the dedication, same as the couple's, so the UI still
-    // needs to tell them apart from an ordinary guest.
+    // The deployer signs no vows and can't propose or accept, but they're the one
+    // who assigns groom/bride and may hide an abusive tribute — the UI needs to tell
+    // them apart from an ordinary guest.
     if (sameAddress(wallet.account, ceremony.deployer)) return "deployer";
     return "guest";
   }, [wallet.account, ceremony]);
@@ -152,6 +137,25 @@ export function useWedding(wallet) {
         setTx({ state: "confirmed", action, hash: sent.hash, message: "" });
         await refresh();
         return receipt;
+      } catch (err) {
+        setTx({ state: "error", action, hash: null, message: friendlyError(err) });
+        return null;
+      }
+    },
+    [wallet, refresh],
+  );
+
+  // The sponsored path: a smart-wallet transaction has no signer/`.wait()` the way an
+  // ordinary ethers transaction does — Privy's client resolves once the transaction
+  // has actually landed, straight to a hash.
+  const sendSponsored = useCallback(
+    async (action, data) => {
+      setTx({ state: "pending", action, hash: null, message: "" });
+      try {
+        const hash = await wallet.smartWallet.sendSponsored(contractAddress, data);
+        setTx({ state: "confirmed", action, hash, message: "" });
+        await refresh();
+        return { hash };
       } catch (err) {
         setTx({ state: "error", action, hash: null, message: friendlyError(err) });
         return null;
@@ -188,11 +192,9 @@ export function useWedding(wallet) {
         previousStatus.current = STATUS.MARRIED;
         setCelebration({
           hash: receipt.hash,
-          totalAmount: event.args.totalAmount,
           timestamp: event.args.timestamp,
           groomVow: event.args.groomVow,
           brideVow: event.args.brideVow,
-          dedication: event.args.dedication,
         });
       }
       return receipt;
@@ -200,17 +202,25 @@ export function useWedding(wallet) {
     [send],
   );
 
-  const depositGift = useCallback(
-    (amountEth, message) =>
-      send("deposit", (contract) =>
-        contract.depositGift(message, { value: parseEther(amountEth) }),
-      ),
+  const setGroom = useCallback(
+    (address) => send("setGroom", (contract) => contract.setGroom(address)),
     [send],
   );
 
-  const withdraw = useCallback(
-    () => send("withdraw", (contract) => contract.withdrawGift()),
+  const setBride = useCallback(
+    (address) => send("setBride", (contract) => contract.setBride(address)),
     [send],
+  );
+
+  const sendTribute = useCallback(
+    (name, message) => {
+      if (wallet.smartWallet?.isAvailable) {
+        const data = new Interface(abi).encodeFunctionData("sendTribute", [name, message]);
+        return sendSponsored("tribute", data);
+      }
+      return send("tribute", (contract) => contract.sendTribute(name, message));
+    },
+    [wallet, send, sendSponsored],
   );
 
   const openCelebration = useCallback(() => {
@@ -228,8 +238,9 @@ export function useWedding(wallet) {
     refresh,
     propose,
     accept,
-    depositGift,
-    withdraw,
+    setGroom,
+    setBride,
+    sendTribute,
     celebration,
     openCelebration,
     dismissCelebration: () => setCelebration(null),

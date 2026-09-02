@@ -31,12 +31,6 @@ export default function VowsPanel({ ceremony, couple, emptyVow }) {
         {married ? (
           <Clause who={couple.brideName} text={ceremony.brideVow} fallback={emptyVow} />
         ) : null}
-        {ceremony.dedication ? (
-          <div className="border-l-2 pl-4" style={{ borderColor: "var(--color-gilt)" }}>
-            <p className="label">Dedicatória</p>
-            <p className="mt-2 leading-relaxed">{ceremony.dedication}</p>
-          </div>
-        ) : null}
       </div>
     </section>
   );

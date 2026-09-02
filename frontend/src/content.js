@@ -19,14 +19,15 @@ export const content = {
     photoCaption: "Mateu e Keli",
   },
 
-  gift: {
-    title: "Deixe seu presente",
+  tribute: {
+    title: "Deixe uma homenagem",
     intro:
-      "O valor fica guardado no contrato e só pode ser retirado pelos noivos depois do sim. Nenhum intermediário no meio do caminho.",
-    amountLabel: "Valor",
-    messageLabel: "Recado (opcional)",
-    messagePlaceholder: "Uma linha para os noivos lerem depois",
-    submit: "Enviar presente",
+      "Um recado seu, gravado para sempre neste registro. Não precisa ter carteira nem ETH — basta entrar com o Google.",
+    nameLabel: "Seu nome",
+    namePlaceholder: "Como quer assinar",
+    messageLabel: "Recado",
+    messagePlaceholder: "O que você gostaria de dizer ao casal",
+    submit: "Gravar homenagem",
   },
 
   /** The message shown in the celebration modal, right after she says yes. */

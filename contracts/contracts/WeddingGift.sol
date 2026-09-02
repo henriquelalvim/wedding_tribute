@@ -3,11 +3,12 @@ pragma solidity ^0.8.28;
 
 /// @title WeddingGift
 /// @notice An on-chain wedding on Base. The groom proposes, the bride accepts, and
-///         guests fund the couple's gift at any point. Once married, either spouse
-///         may withdraw the whole balance.
-/// @dev There is no owner, no pause and no upgrade path: nothing here can hold the
-///      couple's gift hostage. The privileged addresses are the three immutables set
-///      at deployment: groom, bride, and whoever sent the deployment transaction.
+///         anyone — guests included — may leave a tribute on the public guestbook.
+/// @dev There is no owner, no pause and no upgrade path. The deployer is the one
+///      privileged address, but only to assign the couple's addresses once (they
+///      don't exist until the groom/bride log in for the first time) and to hide an
+///      abusive tribute — it can never block a proposal, an acceptance, or anyone's
+///      right to leave a tribute of their own.
 contract WeddingGift {
     /// @notice Where the ceremony currently stands.
     enum Status {
@@ -16,74 +17,97 @@ contract WeddingGift {
         Married // she said yes
     }
 
-    /// @notice Maximum size, in bytes, of any vow, dedication or gift message.
-    /// @dev Keeps the celebration event cheap to emit and the UI predictable.
+    /// @notice Maximum size, in bytes, of a vow or a tribute message.
     uint256 public constant MAX_MESSAGE_LENGTH = 280;
 
-    address public immutable groom;
-    address public immutable bride;
-    /// @notice Whoever sent the deployment transaction — typically the friend who is
-    ///         actually funding the gift, not the couple. Also allowed to set the
-    ///         dedication, since in practice they are the one making the deposit that
-    ///         carries it.
+    /// @notice Maximum size, in bytes, of a tribute's name — a signature, not a
+    ///         second message.
+    uint256 public constant MAX_NAME_LENGTH = 64;
+
+    /// @notice Whoever sent the deployment transaction. The only address allowed to
+    ///         assign the couple or hide a tribute.
     address public immutable deployer;
+
+    /// @notice The couple. Unset (zero address) until the deployer assigns them —
+    ///         their wallet doesn't exist until they log in for the first time, so it
+    ///         can't be fixed at construction time the way it used to be.
+    address public groom;
+    address public bride;
 
     Status public status;
     /// @notice Block timestamp of the moment the bride accepted. Zero until then.
     uint256 public marriedAt;
     string public groomVow;
     string public brideVow;
-    /// @notice A message attached to a gift deposit from the groom, the bride or the
-    ///         deployer, read out with the vows when the marriage is celebrated.
-    string public dedication;
+
+    /// @notice One entry on the public guestbook.
+    struct Tribute {
+        address author;
+        string name;
+        string message;
+        uint256 timestamp;
+        bool hidden;
+    }
+
+    Tribute[] private _tributes;
 
     /// @notice Everything the frontend needs, in a single RPC call.
     struct Summary {
         Status status;
-        uint256 balance;
         uint256 marriedAt;
         address groom;
         address bride;
         address deployer;
         string groomVow;
         string brideVow;
-        string dedication;
     }
 
+    event GroomSet(address indexed groom);
+    event BrideSet(address indexed bride);
     event Proposal(address indexed groom, string vow, uint256 timestamp);
-    event GiftReceived(address indexed from, uint256 amount, string message, uint256 timestamp);
-    event GiftWithdrawn(address indexed to, uint256 amount, uint256 timestamp);
-    event MarriageCelebrated(
-        address groom,
-        address bride,
-        uint256 timestamp,
-        uint256 totalAmount,
-        string groomVow,
-        string brideVow,
-        string dedication
-    );
+    event MarriageCelebrated(address groom, address bride, uint256 timestamp, string groomVow, string brideVow);
+    event TributeReceived(uint256 indexed id, address indexed author, string name, string message, uint256 timestamp);
+    event TributeHidden(uint256 indexed id);
 
     error InvalidCouple();
     error NotGroom();
     error NotBride();
-    error NotCouple();
+    error NotDeployer();
+    error AlreadySet();
     error InvalidStatus();
-    error EmptyGift();
-    error NothingToWithdraw();
     error MessageTooLong();
-    error TransferFailed();
+    error NameTooLong();
+    error EmptyTribute();
+    error TributeNotFound();
 
-    constructor(address groom_, address bride_) {
-        if (groom_ == address(0) || bride_ == address(0) || groom_ == bride_) {
-            revert InvalidCouple();
-        }
-        groom = groom_;
-        bride = bride_;
+    constructor() {
         deployer = msg.sender;
+    }
+
+    /// @notice One-shot assignment of the groom's address. Only the deployer may call
+    ///         this, and only before it's already set.
+    function setGroom(address groom_) external {
+        if (msg.sender != deployer) revert NotDeployer();
+        if (groom != address(0)) revert AlreadySet();
+        if (groom_ == address(0) || groom_ == bride) revert InvalidCouple();
+        groom = groom_;
+        emit GroomSet(groom_);
+    }
+
+    /// @notice One-shot assignment of the bride's address. Only the deployer may call
+    ///         this, and only before it's already set.
+    function setBride(address bride_) external {
+        if (msg.sender != deployer) revert NotDeployer();
+        if (bride != address(0)) revert AlreadySet();
+        if (bride_ == address(0) || bride_ == groom) revert InvalidCouple();
+        bride = bride_;
+        emit BrideSet(bride_);
     }
 
     /// @notice The groom asks. Callable again while still Proposed, so a typo in the
     ///         vow can be fixed before she answers; locked forever once married.
+    /// @dev While `groom` is still unset, `msg.sender` (never the zero address) can
+    ///      never match it, so this correctly rejects everyone until setGroom runs.
     function propose(string calldata vow) external {
         if (msg.sender != groom) revert NotGroom();
         if (status == Status.Married) revert InvalidStatus();
@@ -105,79 +129,69 @@ contract WeddingGift {
         status = Status.Married;
         marriedAt = block.timestamp;
 
-        emit MarriageCelebrated(
-            groom,
-            bride,
-            block.timestamp,
-            address(this).balance,
-            groomVow,
-            vow,
-            dedication
-        );
+        emit MarriageCelebrated(groom, bride, block.timestamp, groomVow, vow);
     }
 
-    /// @notice Send a gift to the couple, with an optional message.
-    /// @dev Open to everyone, before or after the wedding.
-    function depositGift(string calldata message) external payable {
+    /// @notice Leave a tribute on the public guestbook. Open to anyone, no access
+    ///         control, before or after the wedding — that's the whole point.
+    function sendTribute(string calldata name, string calldata message) external {
+        if (bytes(message).length == 0) revert EmptyTribute();
+        if (bytes(name).length > MAX_NAME_LENGTH) revert NameTooLong();
         _checkLength(message);
-        _registerGift(message);
+
+        _tributes.push(Tribute(msg.sender, name, message, block.timestamp, false));
+        emit TributeReceived(_tributes.length - 1, msg.sender, name, message, block.timestamp);
     }
 
-    /// @notice Plain ETH transfers are treated as a gift with no message.
-    receive() external payable {
-        _registerGift("");
+    /// @notice All tributes still visible, in the order they were sent.
+    /// @dev A `public` array only auto-generates a getter for one index at a time, so
+    ///      the array stays private behind this explicit view.
+    function getTributes() external view returns (Tribute[] memory) {
+        uint256 total = _tributes.length;
+        uint256 visibleCount;
+        for (uint256 i = 0; i < total; i++) {
+            if (!_tributes[i].hidden) visibleCount++;
+        }
+
+        Tribute[] memory visible = new Tribute[](visibleCount);
+        uint256 cursor;
+        for (uint256 i = 0; i < total; i++) {
+            if (!_tributes[i].hidden) {
+                visible[cursor] = _tributes[i];
+                cursor++;
+            }
+        }
+        return visible;
     }
 
-    /// @notice Sends the entire balance to whoever calls it, groom or bride.
-    /// @dev Only after the wedding. Reentrancy is a non-issue: the balance is already
-    ///      zero while the recipient's fallback runs, so a reentrant call reverts with
-    ///      NothingToWithdraw.
-    function withdrawGift() external {
-        if (msg.sender != groom && msg.sender != bride) revert NotCouple();
-        if (status != Status.Married) revert InvalidStatus();
-
-        uint256 amount = address(this).balance;
-        if (amount == 0) revert NothingToWithdraw();
-
-        (bool sent, ) = msg.sender.call{value: amount}("");
-        if (!sent) revert TransferFailed();
-
-        emit GiftWithdrawn(msg.sender, amount, block.timestamp);
+    /// @notice Total tributes ever sent, hidden ones included — the id space, not the
+    ///         visible count.
+    function getTributeCount() external view returns (uint256) {
+        return _tributes.length;
     }
 
-    /// @notice Current gift balance held by the contract, in wei.
-    function getBalance() external view returns (uint256) {
-        return address(this).balance;
+    /// @notice Soft-deletes an abusive or spam tribute. The only moderation possible
+    ///         with no backend, given sendTribute has no access control.
+    function hideTribute(uint256 id) external {
+        if (msg.sender != deployer) revert NotDeployer();
+        if (id >= _tributes.length) revert TributeNotFound();
+        _tributes[id].hidden = true;
+        emit TributeHidden(id);
     }
 
     /// @notice The whole ceremony state in one call, so the public RPC is hit once
-    ///         per poll instead of seven times.
+    ///         per poll instead of several times.
     function summary() external view returns (Summary memory) {
         return
             Summary({
                 status: status,
-                balance: address(this).balance,
                 marriedAt: marriedAt,
                 groom: groom,
                 bride: bride,
                 deployer: deployer,
                 groomVow: groomVow,
-                brideVow: brideVow,
-                dedication: dedication
+                brideVow: brideVow
             });
-    }
-
-    function _registerGift(string memory message) private {
-        if (msg.value == 0) revert EmptyGift();
-
-        // Only the couple or the deployer write the dedication; a guest's note lives
-        // in the event log alone. An empty message never wipes a dedication already set.
-        bool canDedicate = msg.sender == groom || msg.sender == bride || msg.sender == deployer;
-        if (bytes(message).length > 0 && canDedicate) {
-            dedication = message;
-        }
-
-        emit GiftReceived(msg.sender, msg.value, message, block.timestamp);
     }
 
     function _checkLength(string calldata text) private pure {

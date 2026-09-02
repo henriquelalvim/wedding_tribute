@@ -1,7 +1,7 @@
 import { shortAddress } from "../lib/format.js";
 
 export default function DocumentHeader({ registryLabel, chain, wallet }) {
-  const { hasWallet, account, isConnected, isConnecting, isOnExpectedChain } = wallet;
+  const { hasWallet, hasPrivy, account, isConnected, isConnecting, isOnExpectedChain } = wallet;
 
   return (
     <header
@@ -38,17 +38,31 @@ export default function DocumentHeader({ registryLabel, chain, wallet }) {
               Sair
             </button>
           </div>
-        ) : hasWallet ? (
-          <button
-            type="button"
-            className="btn btn-quiet shrink-0 min-h-11 px-4 text-sm"
-            onClick={wallet.connect}
-            disabled={isConnecting}
-          >
-            {isConnecting ? "Conectando…" : "Conectar carteira"}
-          </button>
         ) : (
-          <span className="hidden text-xs text-ink-soft sm:block">Somente leitura</span>
+          <div className="flex shrink-0 items-center gap-2">
+            {hasPrivy ? (
+              <button
+                type="button"
+                className="btn btn-quiet min-h-11 px-4 text-sm"
+                onClick={wallet.connectWithGoogle}
+                disabled={isConnecting}
+              >
+                {isConnecting ? "Entrando…" : "Entrar com Google"}
+              </button>
+            ) : null}
+            {hasWallet ? (
+              <button
+                type="button"
+                className="btn btn-quiet min-h-11 px-4 text-sm"
+                onClick={wallet.connect}
+                disabled={isConnecting}
+              >
+                Conectar carteira
+              </button>
+            ) : !hasPrivy ? (
+              <span className="hidden text-xs text-ink-soft sm:block">Somente leitura</span>
+            ) : null}
+          </div>
         )}
       </div>
 
