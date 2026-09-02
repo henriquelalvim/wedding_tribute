@@ -44,7 +44,7 @@ export default function SignatureBlock({ ceremony, role, wallet, wedding, chain 
         <div className="mt-5 space-y-5">
           <p className="text-sm leading-relaxed text-ink-soft">
             {status === STATUS.PENDING
-              ? "Escreva o que ela vai ler ao abrir esta página. Fica gravado no contrato."
+              ? "Faça um pedido de casamento, com seus votos de forma resumida. Ficará gravado para a eternidade."
               : "O pedido já está no ar. Você ainda pode reescrever seus votos enquanto ela não responde."}
           </p>
           <VowField

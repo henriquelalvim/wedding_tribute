@@ -36,9 +36,9 @@ export const content = {
     body: [
       "Neste bloco, e em todos os que vierem depois dele, fica registrado que duas pessoas escolheram uma à outra.",
       "Não existe cartório que dure mais que isto. Enquanto houver um único nó de pé em qualquer canto do mundo, este sim continua lá — sem carimbo para renovar, sem gaveta para se perder, sem ninguém que possa apagar.",
-      "Que o resto da história de vocês seja tão difícil de reverter quanto esta transação.",
+      "Que a felicidade e o amor de vocês perdure tanto tempo quanto o registro dessa transação.",
     ],
-    signature: "Com todo o carinho de quem escreveu este contrato.",
+    signature: "Com todo o carinho de quem escreveu este contrato, Henrique Alvim",
   },
 
   /** Fallback text when a vow was left blank on-chain. */
