@@ -33,13 +33,13 @@ export const content = {
   /** The message shown in the celebration modal, right after she says yes. */
   celebration: {
     eyebrow: "5 de Setembro de 2026",
-    title: "Ela disse sim.",
+    title: "Aee!!! Casaram <3 <3 <3 !!!",
     body: [
       "Neste bloco, e em todos os que vierem depois dele, fica registrado que duas pessoas escolheram uma à outra.",
       "Não existe cartório que dure mais que isto. Enquanto houver um único nó de pé em qualquer canto do mundo, este sim continua lá — sem carimbo para renovar, sem gaveta para se perder, sem ninguém que possa apagar.",
       "Que a felicidade e o amor de vocês perdure tanto tempo quanto o registro dessa transação.",
     ],
-    signature: "Com todo o carinho de quem escreveu este contrato, Henrique Alvim",
+    signature: "Com todo o carinho de quem escreveu este contrato, Henrique de Lima Alvim",
   },
 
   /** Fallback text when a vow was left blank on-chain. */
