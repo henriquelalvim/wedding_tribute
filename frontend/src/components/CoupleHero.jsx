@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { displayName } from "../lib/format.js";
 import AddressLink from "./AddressLink.jsx";
 
 const photoUrl = `${import.meta.env.BASE_URL}couple.jpg`;
@@ -47,9 +46,9 @@ export default function CoupleHero({ couple, ceremony, explorer }) {
 
       <div className="mt-10 text-center">
         <h1 className="font-display text-4xl leading-tight sm:text-5xl">
-          {displayName(ceremony?.groomName, couple.groomName)}
+          {couple.groomName}
           <span className="mx-3 align-middle text-3xl text-seal sm:text-4xl">&amp;</span>
-          {displayName(ceremony?.brideName, couple.brideName)}
+          {couple.brideName}
         </h1>
         <p className="label mt-4">{couple.date}</p>
         {couple.place ? <p className="mt-1 text-sm text-ink-soft">{couple.place}</p> : null}
