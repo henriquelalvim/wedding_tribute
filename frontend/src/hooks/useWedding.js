@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Contract, Interface } from "ethers";
+import { Contract } from "ethers";
 import abi from "../abi/WeddingGift.json";
 import { contractAddress, POLL_INTERVAL_MS, STATUS } from "../config.js";
 import { friendlyError, sameAddress } from "../lib/format.js";
@@ -149,25 +149,6 @@ export function useWedding(wallet) {
     [wallet, refresh],
   );
 
-  // The sponsored path: a smart-wallet transaction has no signer/`.wait()` the way an
-  // ordinary ethers transaction does — Privy's client resolves once the transaction
-  // has actually landed, straight to a hash.
-  const sendSponsored = useCallback(
-    async (action, data) => {
-      setTx({ state: "pending", action, hash: null, message: "" });
-      try {
-        const hash = await wallet.smartWallet.sendSponsored(contractAddress, data);
-        setTx({ state: "confirmed", action, hash, message: "" });
-        await refresh();
-        return { hash };
-      } catch (err) {
-        setTx({ state: "error", action, hash: null, message: friendlyError(err) });
-        return null;
-      }
-    },
-    [wallet, refresh],
-  );
-
   const propose = useCallback(
     (name, vow) => send("propose", (contract) => contract.propose(name, vow)),
     [send],
@@ -218,15 +199,13 @@ export function useWedding(wallet) {
     [send],
   );
 
+  // No Paymaster is configured (deliberately — see useWallet.js's smartWallet, kept
+  // but unused here), so a tribute is paid for like any other transaction: by whoever
+  // signs it, straight from their own embedded/injected wallet. A Google-login guest
+  // still needs their own ETH on the connected chain, the same as MetaMask would.
   const sendTribute = useCallback(
-    (name, message) => {
-      if (wallet.smartWallet?.isAvailable) {
-        const data = new Interface(abi).encodeFunctionData("sendTribute", [name, message]);
-        return sendSponsored("tribute", data);
-      }
-      return send("tribute", (contract) => contract.sendTribute(name, message));
-    },
-    [wallet, send, sendSponsored],
+    (name, message) => send("tribute", (contract) => contract.sendTribute(name, message)),
+    [send],
   );
 
   const openCelebration = useCallback(() => {

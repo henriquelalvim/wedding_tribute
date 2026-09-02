@@ -29,10 +29,9 @@ Detalhes que valem saber:
 - **Descobrindo o endereço de antemão**: mande pro noivo/noiva o link da página com
   `?login=1` no final (ex. `https://.../?login=1`) — abre uma tela mínima, sem o resto
   do site, só pra eles entrarem (Google ou carteira) e copiarem o próprio endereço.
-  `propose`/`accept` **não têm gas patrocinado** (só as homenagens têm, via Smart
-  Wallets + Paymaster), então depois de saber o endereço, mande um pouco de ETH pra ele
-  antes de atribuir noivo/noiva no painel — senão a transação deles falha por falta de
-  saldo.
+  Nenhuma transação tem gas patrocinado (nem `propose`/`accept`, nem `sendTribute`) —
+  depois de saber o endereço, mande um pouco de ETH pra ele antes de atribuir
+  noivo/noiva no painel, senão a transação deles falha por falta de saldo.
 - **O pedido pode ser reescrito** enquanto a noiva não responder — dá para corrigir um
   erro de digitação nos votos (e no nome). Depois do sim, tudo trava para sempre.
 - **O nome de cada um é auto-declarado**, no momento do próprio `propose`/`accept` — o
@@ -56,9 +55,7 @@ A página aceita duas formas de conectar, lado a lado:
 
 - **MetaMask** (ou qualquer carteira injetada) — o caminho de sempre.
 - **Google/e-mail via [Privy](https://www.privy.io)** — cria uma carteira embarcada na
-  hora, sem instalar nada. Como essa carteira nasce com saldo zero, o envio de
-  homenagem por esse caminho é **patrocinado** (gas pago por um Paymaster, não pelo
-  convidado) via Privy Smart Wallets.
+  hora, sem instalar nada.
 
 Isso é opcional: sem preencher `VITE_PRIVY_APP_ID`, o botão "Entrar com Google" some e
 a página funciona só com MetaMask, como antes.
@@ -67,14 +64,18 @@ Pra habilitar:
 
 1. Crie um app em <https://dashboard.privy.io>, restrinja os métodos de login a
    Google e e-mail, e copie o App ID.
-2. Configure Smart Wallets no painel do Privy e registre a URL de um Paymaster pra
-   rede que for usar (ex.: o Paymaster da [Coinbase Developer
-   Platform](https://www.coinbase.com/developer-platform) pra Base, que tem tier
-   grátis pro volume de uma festa). Isso é feito **no painel do Privy**, não no `.env`.
-3. Preencha `VITE_PRIVY_APP_ID` em `frontend/.env`.
+2. Preencha `VITE_PRIVY_APP_ID` em `frontend/.env`.
 
-> A carteira MetaMask/injetada paga o próprio gas normalmente — o patrocínio existe só
-> pra quem loga com Google/e-mail, que é o caminho pensado pra convidados sem carteira.
+> **Gas não é patrocinado.** A carteira criada pelo login social nasce com saldo zero
+> igual qualquer carteira nova — quem for deixar uma homenagem por esse caminho precisa
+> de um pouco de ETH na rede, do mesmo jeito que um convidado com MetaMask precisaria.
+> Decisão deliberada: dava pra patrocinar via Privy Smart Wallets + um Paymaster
+> (ex. o da [Coinbase Developer Platform](https://www.coinbase.com/developer-platform)),
+> mas isso faz a transação passar por um `EntryPoint`/smart account por baixo, o que
+> deixa a leitura no Blockscout menos direta (a chamada ao contrato aparece como uma
+> transação interna, não como a transação em si) — preferimos manter toda transação
+> simples e decodificada de cara. `useWallet.js` já expõe `smartWallet.sendSponsored`
+> pronto pra religar isso, se um dia fizer sentido.
 
 ---
 
@@ -181,11 +182,6 @@ efetivamente logarem pela primeira vez.
 cd contracts && npm test     # 42 testes do contrato
 cd frontend  && npm test     # 11 testes dos utilitários
 ```
-
-O caminho de patrocínio de gas (Privy Smart Wallets + Paymaster) não dá pra testar
-contra um nó local — Paymasters só reconhecem redes públicas registradas. Validação
-real desse caminho é manual, na Base Sepolia, com login incógnito pra garantir uma
-carteira embarcada zerada.
 
 ---
 
