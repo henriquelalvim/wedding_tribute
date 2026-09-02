@@ -22,7 +22,7 @@ export const content = {
   tribute: {
     title: "Deixe uma homenagem",
     intro:
-      "Um recado seu, gravado para sempre neste registro. Não precisa ter carteira nem ETH — basta entrar com o Google.",
+      "Um recado seu, gravado para sempre neste registro. Basta entrar com o google. ",
     nameLabel: "Seu nome",
     namePlaceholder: "Como quer assinar",
     messageLabel: "Recado",
