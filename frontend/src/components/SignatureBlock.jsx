@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { MAX_MESSAGE_BYTES, STATUS } from "../config.js";
-import { byteLength, formatEth } from "../lib/format.js";
+import { byteLength } from "../lib/format.js";
 import VowField from "./VowField.jsx";
 
 /**
  * The signature block of the document: only the two people named above ever see
- * anything here. Everyone else — guests and the deployer alike — gets the gift form
- * instead. The deployer can fund the gift and set the dedication, but proposing,
- * accepting and withdrawing are the couple's alone.
+ * anything here. Everyone else — guests and the deployer alike — gets the tribute
+ * form instead. Proposing and accepting are the couple's alone.
  */
 export default function SignatureBlock({ ceremony, role, wallet, wedding, chain }) {
   const [vow, setVow] = useState("");
@@ -22,7 +21,6 @@ export default function SignatureBlock({ ceremony, role, wallet, wedding, chain 
   const isGroom = role === "groom";
   const canPropose = isGroom && status !== STATUS.MARRIED;
   const canAccept = role === "bride" && status === STATUS.PROPOSED;
-  const canWithdraw = status === STATUS.MARRIED && ceremony.balance > 0n;
 
   const submit = async (action) => {
     const sent = action === "propose" ? wedding.propose(vow) : wedding.accept(vow);
@@ -97,21 +95,9 @@ export default function SignatureBlock({ ceremony, role, wallet, wedding, chain 
       ) : null}
 
       {status === STATUS.MARRIED ? (
-        <div className="mt-5 space-y-4">
-          <p className="text-sm leading-relaxed text-ink-soft">
-            {canWithdraw
-              ? `Há ${formatEth(ceremony.balance)} ${chain.currency.symbol} guardados. O saque envia tudo para a carteira conectada.`
-              : "Não há saldo para sacar no momento."}
-          </p>
-          <button
-            type="button"
-            className="btn btn-primary w-full"
-            disabled={busy || blocked || !canWithdraw}
-            onClick={wedding.withdraw}
-          >
-            Sacar presentes
-          </button>
-        </div>
+        <p className="mt-5 text-sm leading-relaxed text-ink-soft">
+          Vocês estão casados — o registro é permanente e não muda mais.
+        </p>
       ) : null}
 
       {blocked ? (

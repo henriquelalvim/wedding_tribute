@@ -63,7 +63,30 @@ export const configError = !contractAddress
 /** How often the public RPC is polled for the ceremony state, in milliseconds. */
 export const POLL_INTERVAL_MS = 10_000;
 
-/** Mirrors WeddingGift.MAX_MESSAGE_BYTES. */
+/** How often the public RPC is polled for the tribute list, in milliseconds. Kept
+ * separate from POLL_INTERVAL_MS: the list only grows, so it doesn't need the same
+ * cadence as the ceremony status. */
+export const TRIBUTES_POLL_INTERVAL_MS = 20_000;
+
+/** Mirrors WeddingGift.MAX_MESSAGE_LENGTH. */
 export const MAX_MESSAGE_BYTES = 280;
 
+/** Mirrors WeddingGift.MAX_NAME_LENGTH. */
+export const MAX_NAME_BYTES = 64;
+
 export const STATUS = { PENDING: 0, PROPOSED: 1, MARRIED: 2 };
+
+/** Social login (Google/e-mail) via Privy, as an alternative to MetaMask. Blank until
+ * a real app id is filled in — the "Entrar com Google" button stays hidden until then. */
+export const privyAppId = (import.meta.env.VITE_PRIVY_APP_ID || "").trim();
+export const hasPrivy = privyAppId.length > 0;
+
+/** A minimal viem-shaped Chain descriptor for PrivyProvider, built from `chain` above
+ * instead of importing a fixed constant from viem/chains — this way it automatically
+ * matches whichever network VITE_CHAIN_ID/VITE_RPC_URL actually point at. */
+export const privyChain = {
+  id: chain.id,
+  name: chain.name,
+  nativeCurrency: chain.currency,
+  rpcUrls: { default: { http: [chain.rpcUrl] } },
+};

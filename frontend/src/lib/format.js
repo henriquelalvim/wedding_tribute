@@ -1,5 +1,3 @@
-import { formatEther } from "ethers";
-
 const encoder = new TextEncoder();
 
 /** UTF-8 byte length — the unit the contract measures messages in. */
@@ -14,18 +12,6 @@ export function shortAddress(address) {
 
 export function sameAddress(a, b) {
   return Boolean(a) && Boolean(b) && a.toLowerCase() === b.toLowerCase();
-}
-
-/**
- * Formats wei as ETH with a fixed number of decimals, in pt-BR notation.
- * Trailing zeros are kept so the number does not jump around while polling.
- */
-export function formatEth(wei, decimals = 4) {
-  const value = Number(formatEther(wei ?? 0n));
-  return value.toLocaleString("pt-BR", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  });
 }
 
 export function formatDateTime(unixSeconds) {
@@ -60,12 +46,14 @@ export function friendlyError(error) {
   const known = {
     NotGroom: "Só a carteira do noivo pode fazer o pedido.",
     NotBride: "Só a carteira da noiva pode responder.",
-    NotCouple: "Só os noivos podem sacar.",
     InvalidStatus: "Esta ação não está disponível no estado atual da cerimônia.",
-    EmptyGift: "Informe um valor maior que zero.",
-    NothingToWithdraw: "Não há nada para sacar.",
     MessageTooLong: "A mensagem passou do limite de 280 caracteres.",
-    TransferFailed: "A transferência falhou. Tente novamente.",
+    NotDeployer: "Só a carteira do deployer pode fazer isso.",
+    AlreadySet: "Esse endereço já foi definido e não pode ser trocado.",
+    InvalidCouple: "Endereço inválido — não pode ser vazio nem igual ao do outro cônjuge.",
+    NameTooLong: "O nome passou do limite de 64 caracteres.",
+    EmptyTribute: "Escreva um recado antes de enviar.",
+    TributeNotFound: "Essa homenagem não existe.",
   };
   if (name && known[name]) return known[name];
 
