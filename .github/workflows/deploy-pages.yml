@@ -45,6 +45,7 @@ jobs:
           VITE_CONTRACT_ADDRESS: ${{ vars.VITE_CONTRACT_ADDRESS }}
           VITE_RPC_URL: ${{ vars.VITE_RPC_URL }}
           VITE_BASE_PATH: ${{ vars.VITE_BASE_PATH }}
+          VITE_PRIVY_APP_ID: ${{ vars.VITE_PRIVY_APP_ID }}
 
       - run: touch dist/.nojekyll
 
