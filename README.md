@@ -26,6 +26,13 @@ Detalhes que valem saber:
   (Google/e-mail) só existe depois do primeiro login — por isso o deployer atribui os
   dois endereços depois, uma vez cada, por um painel discreto no rodapé da página
   (só aparece pra quem está logado como deployer, e só enquanto faltar definir alguém).
+- **Descobrindo o endereço de antemão**: mande pro noivo/noiva o link da página com
+  `?login=1` no final (ex. `https://.../?login=1`) — abre uma tela mínima, sem o resto
+  do site, só pra eles entrarem (Google ou carteira) e copiarem o próprio endereço.
+  `propose`/`accept` **não têm gas patrocinado** (só as homenagens têm, via Smart
+  Wallets + Paymaster), então depois de saber o endereço, mande um pouco de ETH pra ele
+  antes de atribuir noivo/noiva no painel — senão a transação deles falha por falta de
+  saldo.
 - **O pedido pode ser reescrito** enquanto a noiva não responder — dá para corrigir um
   erro de digitação nos votos. Depois do sim, tudo trava para sempre.
 - **O mural é público de verdade.** Qualquer carteira — noivo, noiva, deployer ou

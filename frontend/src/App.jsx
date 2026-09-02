@@ -3,6 +3,7 @@ import content from "./content.js";
 import { useWallet } from "./hooks/useWallet.js";
 import { useWedding } from "./hooks/useWedding.js";
 import { useTributes } from "./hooks/useTributes.js";
+import AddressReveal from "./components/AddressReveal.jsx";
 import CelebrationModal from "./components/CelebrationModal.jsx";
 import Colophon from "./components/Colophon.jsx";
 import CoupleAdminPanel from "./components/CoupleAdminPanel.jsx";
@@ -103,6 +104,13 @@ function Wedding() {
   );
 }
 
+// A private link (?login=1), sent only to the groom/bride: it skips the whole site
+// and just asks them to log in and copy their own address. Read once at mount — this
+// is a destination for a link someone opens, not something the app ever navigates to.
+const isAddressRevealRoute =
+  typeof window !== "undefined" && new URLSearchParams(window.location.search).get("login") === "1";
+
 export default function App() {
+  if (isAddressRevealRoute) return <AddressReveal />;
   return isConfigured ? <Wedding /> : <SetupNotice />;
 }
