@@ -18,7 +18,7 @@ contract WeddingGift {
 
     /// @notice Maximum size, in bytes, of any vow, dedication or gift message.
     /// @dev Keeps the celebration event cheap to emit and the UI predictable.
-    uint256 public constant MAX_MESSAGE_BYTES = 280;
+    uint256 public constant MAX_MESSAGE_LENGTH = 280;
 
     address public immutable groom;
     address public immutable bride;
@@ -181,6 +181,6 @@ contract WeddingGift {
     }
 
     function _checkLength(string calldata text) private pure {
-        if (bytes(text).length > MAX_MESSAGE_BYTES) revert MessageTooLong();
+        if (bytes(text).length > MAX_MESSAGE_LENGTH) revert MessageTooLong();
     }
 }
