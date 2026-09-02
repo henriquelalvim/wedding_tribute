@@ -17,7 +17,9 @@ const HEADLINE = {
 export default function TxBanner({ tx, chain, onDismiss }) {
   if (tx.state === "idle") return null;
 
-  const url = explorerTxUrl(chain.explorer, tx.hash);
+  // Only linked once the transaction is actually confirmed — a pending hash
+  // may still drop or be replaced, so there is nothing worth showing yet.
+  const url = tx.state === "confirmed" ? explorerTxUrl(chain.explorer, tx.hash) : "";
   const accent = tx.state === "error" ? "var(--color-seal)" : "var(--color-ink)";
 
   return (

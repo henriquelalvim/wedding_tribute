@@ -1,3 +1,4 @@
+import CopyButton from "./CopyButton.jsx";
 import { shortAddress } from "../lib/format.js";
 
 export default function DocumentHeader({ registryLabel, chain, wallet }) {
@@ -29,6 +30,10 @@ export default function DocumentHeader({ registryLabel, chain, wallet }) {
             >
               {shortAddress(account)}
             </span>
+            <CopyButton
+              value={account}
+              className="btn btn-quiet min-h-0 border-r-0 px-3 py-2 text-xs"
+            />
             <button
               type="button"
               className="btn btn-quiet min-h-0 px-3 py-2 text-xs"
