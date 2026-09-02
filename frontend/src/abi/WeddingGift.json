@@ -192,7 +192,7 @@
   },
   {
     "inputs": [],
-    "name": "MAX_MESSAGE_BYTES",
+    "name": "MAX_MESSAGE_LENGTH",
     "outputs": [
       {
         "internalType": "uint256",
