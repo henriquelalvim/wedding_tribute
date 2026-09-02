@@ -43,8 +43,19 @@ if (balance === 0n) {
   throw new Error("Deployer has no ETH on this network.");
 }
 
+// The deployer is a privileged address in its own right — it may set the gift
+// dedication, the same as the groom or the bride. That is meant for the common case
+// where the deployer is a third party funding the gift for a couple; flag it here in
+// case PRIVATE_KEY was accidentally set to one of their own keys.
+if (deployer.address.toLowerCase() === groom.toLowerCase()) {
+  console.warn("⚠️  Deployer is the same address as GROOM_ADDRESS.");
+}
+if (deployer.address.toLowerCase() === bride.toLowerCase()) {
+  console.warn("⚠️  Deployer is the same address as BRIDE_ADDRESS.");
+}
+
 const factory = await ethers.getContractFactory("WeddingGift");
-const contract = await factory.deploy(groom, bride);
+const contract = await factory.connect(deployer).deploy(groom, bride);
 console.log(`Deploying... tx ${contract.deploymentTransaction()?.hash}`);
 await contract.waitForDeployment();
 

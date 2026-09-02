@@ -29,12 +29,17 @@ export default {
       chainType: "op",
       chainId: 31337,
     },
-    // Standalone node started with `npm run node`.
+    // Standalone node started with `npm run node`. Without an explicit `accounts`,
+    // this network falls back to whichever accounts the remote node reports as
+    // unlocked — its account #0 — regardless of PRIVATE_KEY. Passing it explicitly
+    // makes a local deploy actually go out from the wallet configured in .env, so
+    // "who is the deployer" behaves the same locally as it will on Base.
     localhost: {
       type: "http",
       chainType: "op",
       url: "http://127.0.0.1:8545",
       chainId: 31337,
+      accounts,
     },
     baseSepolia: {
       type: "http",

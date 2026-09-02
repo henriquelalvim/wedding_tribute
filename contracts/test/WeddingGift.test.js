@@ -12,16 +12,19 @@ const DEDICATION = "Que este seja o primeiro de muitos comecos.";
 describe("WeddingGift", function () {
   let ethers;
   let contract;
-  let groom, bride, guest, stranger;
+  // `deployer` is deliberately its own signer, never the groom or the bride: in
+  // practice this is the friend footing the gift, publishing the contract for a
+  // couple who only show up later to propose and accept.
+  let deployer, groom, bride, guest, stranger;
 
   before(async function () {
     ({ ethers } = await network.getOrCreate("default"));
   });
 
   beforeEach(async function () {
-    [groom, bride, guest, stranger] = await ethers.getSigners();
+    [deployer, groom, bride, guest, stranger] = await ethers.getSigners();
     const factory = await ethers.getContractFactory("WeddingGift");
-    contract = await factory.deploy(groom.address, bride.address);
+    contract = await factory.connect(deployer).deploy(groom.address, bride.address);
     await contract.waitForDeployment();
   });
 
@@ -29,6 +32,10 @@ describe("WeddingGift", function () {
     it("stores the couple addresses as immutables", async function () {
       expect(await contract.groom()).to.equal(groom.address);
       expect(await contract.bride()).to.equal(bride.address);
+    });
+
+    it("records whoever sent the deployment transaction", async function () {
+      expect(await contract.deployer()).to.equal(deployer.address);
     });
 
     it("starts in the Pending status with an empty balance", async function () {
@@ -202,6 +209,15 @@ describe("WeddingGift", function () {
       expect(await contract.dedication()).to.equal("da noiva");
     });
 
+    it("records the dedication when the deployer deposits", async function () {
+      // The deployer is the friend who actually funds the gift in practice — their
+      // message is the one that ends up read out at the wedding.
+      await contract.connect(deployer).depositGift(DEDICATION, {
+        value: ethers.parseEther("0.1"),
+      });
+      expect(await contract.dedication()).to.equal(DEDICATION);
+    });
+
     it("does not let a guest overwrite the dedication", async function () {
       await contract.connect(groom).depositGift(DEDICATION, {
         value: ethers.parseEther("0.1"),
@@ -333,6 +349,7 @@ describe("WeddingGift", function () {
       expect(s.balance).to.equal(0n);
       expect(s.groom).to.equal(groom.address);
       expect(s.bride).to.equal(bride.address);
+      expect(s.deployer).to.equal(deployer.address);
       expect(s.groomVow).to.equal("");
       expect(s.brideVow).to.equal("");
       expect(s.dedication).to.equal("");

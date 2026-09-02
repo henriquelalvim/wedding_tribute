@@ -6,8 +6,8 @@ pragma solidity ^0.8.28;
 ///         guests fund the couple's gift at any point. Once married, either spouse
 ///         may withdraw the whole balance.
 /// @dev There is no owner, no pause and no upgrade path: nothing here can hold the
-///      couple's gift hostage. The only privileged addresses are the two immutables
-///      set at deployment.
+///      couple's gift hostage. The privileged addresses are the three immutables set
+///      at deployment: groom, bride, and whoever sent the deployment transaction.
 contract WeddingGift {
     /// @notice Where the ceremony currently stands.
     enum Status {
@@ -22,14 +22,19 @@ contract WeddingGift {
 
     address public immutable groom;
     address public immutable bride;
+    /// @notice Whoever sent the deployment transaction — typically the friend who is
+    ///         actually funding the gift, not the couple. Also allowed to set the
+    ///         dedication, since in practice they are the one making the deposit that
+    ///         carries it.
+    address public immutable deployer;
 
     Status public status;
     /// @notice Block timestamp of the moment the bride accepted. Zero until then.
     uint256 public marriedAt;
     string public groomVow;
     string public brideVow;
-    /// @notice The couple's message, attached to one of their own gift deposits and
-    ///         read out with the vows when the marriage is celebrated.
+    /// @notice A message attached to a gift deposit from the groom, the bride or the
+    ///         deployer, read out with the vows when the marriage is celebrated.
     string public dedication;
 
     /// @notice Everything the frontend needs, in a single RPC call.
@@ -39,6 +44,7 @@ contract WeddingGift {
         uint256 marriedAt;
         address groom;
         address bride;
+        address deployer;
         string groomVow;
         string brideVow;
         string dedication;
@@ -73,6 +79,7 @@ contract WeddingGift {
         }
         groom = groom_;
         bride = bride_;
+        deployer = msg.sender;
     }
 
     /// @notice The groom asks. Callable again while still Proposed, so a typo in the
@@ -153,6 +160,7 @@ contract WeddingGift {
                 marriedAt: marriedAt,
                 groom: groom,
                 bride: bride,
+                deployer: deployer,
                 groomVow: groomVow,
                 brideVow: brideVow,
                 dedication: dedication
@@ -162,9 +170,10 @@ contract WeddingGift {
     function _registerGift(string memory message) private {
         if (msg.value == 0) revert EmptyGift();
 
-        // Only the couple writes the dedication; a guest's note lives in the event log
-        // alone. An empty message never wipes a dedication already set.
-        if (bytes(message).length > 0 && (msg.sender == groom || msg.sender == bride)) {
+        // Only the couple or the deployer write the dedication; a guest's note lives
+        // in the event log alone. An empty message never wipes a dedication already set.
+        bool canDedicate = msg.sender == groom || msg.sender == bride || msg.sender == deployer;
+        if (bytes(message).length > 0 && canDedicate) {
             dedication = message;
         }
 
