@@ -20,8 +20,8 @@ contract WeddingGift {
     /// @notice Maximum size, in bytes, of a vow or a tribute message.
     uint256 public constant MAX_MESSAGE_LENGTH = 280;
 
-    /// @notice Maximum size, in bytes, of a tribute's name — a signature, not a
-    ///         second message.
+    /// @notice Maximum size, in bytes, of a name — the groom's, the bride's, or a
+    ///         tribute's signature. A name, not a second message.
     uint256 public constant MAX_NAME_LENGTH = 64;
 
     /// @notice Whoever sent the deployment transaction. The only address allowed to
@@ -37,6 +37,11 @@ contract WeddingGift {
     Status public status;
     /// @notice Block timestamp of the moment the bride accepted. Zero until then.
     uint256 public marriedAt;
+    /// @notice How each of them signs their own vow — chosen by them, not assigned by
+    ///         the deployer. Empty until they actually propose/accept; the frontend
+    ///         falls back to its own display copy until then.
+    string public groomName;
+    string public brideName;
     string public groomVow;
     string public brideVow;
 
@@ -58,14 +63,24 @@ contract WeddingGift {
         address groom;
         address bride;
         address deployer;
+        string groomName;
+        string brideName;
         string groomVow;
         string brideVow;
     }
 
     event GroomSet(address indexed groom);
     event BrideSet(address indexed bride);
-    event Proposal(address indexed groom, string vow, uint256 timestamp);
-    event MarriageCelebrated(address groom, address bride, uint256 timestamp, string groomVow, string brideVow);
+    event Proposal(address indexed groom, string name, string vow, uint256 timestamp);
+    event MarriageCelebrated(
+        address groom,
+        address bride,
+        string groomName,
+        string brideName,
+        uint256 timestamp,
+        string groomVow,
+        string brideVow
+    );
     event TributeReceived(uint256 indexed id, address indexed author, string name, string message, uint256 timestamp);
     event TributeHidden(uint256 indexed id);
 
@@ -104,32 +119,38 @@ contract WeddingGift {
         emit BrideSet(bride_);
     }
 
-    /// @notice The groom asks. Callable again while still Proposed, so a typo in the
-    ///         vow can be fixed before she answers; locked forever once married.
+    /// @notice The groom asks, signing with whatever name he chooses. Callable again
+    ///         while still Proposed, so a typo in the name or the vow can be fixed
+    ///         before she answers; locked forever once married.
     /// @dev While `groom` is still unset, `msg.sender` (never the zero address) can
     ///      never match it, so this correctly rejects everyone until setGroom runs.
-    function propose(string calldata vow) external {
+    function propose(string calldata name, string calldata vow) external {
         if (msg.sender != groom) revert NotGroom();
         if (status == Status.Married) revert InvalidStatus();
+        if (bytes(name).length > MAX_NAME_LENGTH) revert NameTooLong();
         _checkLength(vow);
 
+        groomName = name;
         groomVow = vow;
         status = Status.Proposed;
 
-        emit Proposal(msg.sender, vow, block.timestamp);
+        emit Proposal(msg.sender, name, vow, block.timestamp);
     }
 
-    /// @notice The bride says yes. This is the transaction the whole page waits for.
-    function accept(string calldata vow) external {
+    /// @notice The bride says yes, signing with whatever name she chooses. This is the
+    ///         transaction the whole page waits for.
+    function accept(string calldata name, string calldata vow) external {
         if (msg.sender != bride) revert NotBride();
         if (status != Status.Proposed) revert InvalidStatus();
+        if (bytes(name).length > MAX_NAME_LENGTH) revert NameTooLong();
         _checkLength(vow);
 
+        brideName = name;
         brideVow = vow;
         status = Status.Married;
         marriedAt = block.timestamp;
 
-        emit MarriageCelebrated(groom, bride, block.timestamp, groomVow, vow);
+        emit MarriageCelebrated(groom, bride, groomName, name, block.timestamp, groomVow, vow);
     }
 
     /// @notice Leave a tribute on the public guestbook. Open to anyone, no access
@@ -189,6 +210,8 @@ contract WeddingGift {
                 groom: groom,
                 bride: bride,
                 deployer: deployer,
+                groomName: groomName,
+                brideName: brideName,
                 groomVow: groomVow,
                 brideVow: brideVow
             });

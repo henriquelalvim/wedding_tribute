@@ -10,6 +10,15 @@ export function shortAddress(address) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
 }
 
+/**
+ * Prefers the name the groom/bride actually chose on-chain when they proposed or
+ * accepted; falls back to the site's own display copy until then (or if they left it
+ * blank on purpose).
+ */
+export function displayName(onChainName, fallback) {
+  return onChainName || fallback;
+}
+
 export function sameAddress(a, b) {
   return Boolean(a) && Boolean(b) && a.toLowerCase() === b.toLowerCase();
 }

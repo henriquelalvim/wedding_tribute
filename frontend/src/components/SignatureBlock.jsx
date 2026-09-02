@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { MAX_MESSAGE_BYTES, STATUS } from "../config.js";
+import { MAX_MESSAGE_BYTES, MAX_NAME_BYTES, STATUS } from "../config.js";
 import { byteLength } from "../lib/format.js";
+import NameField from "./NameField.jsx";
 import VowField from "./VowField.jsx";
 
 /**
@@ -8,7 +9,11 @@ import VowField from "./VowField.jsx";
  * anything here. Everyone else — guests and the deployer alike — gets the tribute
  * form instead. Proposing and accepting are the couple's alone.
  */
-export default function SignatureBlock({ ceremony, role, wallet, wedding, chain }) {
+export default function SignatureBlock({ ceremony, role, wallet, wedding, chain, couple }) {
+  const isGroom = role === "groom";
+  // Pre-filled with the site's own display copy — editable, and left as-is (or
+  // cleared) means the frontend keeps falling back to that same copy everywhere.
+  const [name, setName] = useState(() => (isGroom ? couple.groomName : couple.brideName) ?? "");
   const [vow, setVow] = useState("");
 
   if (!ceremony || (role !== "groom" && role !== "bride")) return null;
@@ -16,14 +21,14 @@ export default function SignatureBlock({ ceremony, role, wallet, wedding, chain 
   const status = ceremony.status;
   const busy = wedding.tx.state === "pending";
   const blocked = !wallet.isOnExpectedChain;
+  const nameTooLong = byteLength(name) > MAX_NAME_BYTES;
   const vowTooLong = byteLength(vow) > MAX_MESSAGE_BYTES;
 
-  const isGroom = role === "groom";
   const canPropose = isGroom && status !== STATUS.MARRIED;
   const canAccept = role === "bride" && status === STATUS.PROPOSED;
 
   const submit = async (action) => {
-    const sent = action === "propose" ? wedding.propose(vow) : wedding.accept(vow);
+    const sent = action === "propose" ? wedding.propose(name, vow) : wedding.accept(name, vow);
     const receipt = await sent;
     if (receipt) setVow("");
   };
@@ -45,6 +50,14 @@ export default function SignatureBlock({ ceremony, role, wallet, wedding, chain 
               ? "Faça um pedido de casamento, com seus votos de forma resumida. Ficará gravado para a eternidade."
               : "O pedido já está no ar. Você ainda pode reescrever seus votos enquanto ela não responde."}
           </p>
+          <NameField
+            id="groom-name"
+            label="Seu nome"
+            placeholder="Como vai assinar o pedido"
+            value={name}
+            onChange={setName}
+            disabled={busy || blocked}
+          />
           <VowField
             id="groom-vow"
             label="Seus votos"
@@ -56,7 +69,7 @@ export default function SignatureBlock({ ceremony, role, wallet, wedding, chain 
           <button
             type="button"
             className="btn btn-primary w-full"
-            disabled={busy || blocked || vowTooLong}
+            disabled={busy || blocked || nameTooLong || vowTooLong}
             onClick={() => submit("propose")}
           >
             {status === STATUS.PENDING ? "Fazer o pedido" : "Reescrever o pedido"}
@@ -69,6 +82,14 @@ export default function SignatureBlock({ ceremony, role, wallet, wedding, chain 
           <p className="text-sm leading-relaxed text-ink-soft">
             Ele já perguntou. Sua resposta é uma transação só — e não tem como desfazer.
           </p>
+          <NameField
+            id="bride-name"
+            label="Seu nome"
+            placeholder="Como vai assinar a resposta"
+            value={name}
+            onChange={setName}
+            disabled={busy || blocked}
+          />
           <VowField
             id="bride-vow"
             label="Sua resposta"
@@ -80,7 +101,7 @@ export default function SignatureBlock({ ceremony, role, wallet, wedding, chain 
           <button
             type="button"
             className="btn btn-seal w-full"
-            disabled={busy || blocked || vowTooLong}
+            disabled={busy || blocked || nameTooLong || vowTooLong}
             onClick={() => submit("accept")}
           >
             Aceitar o pedido

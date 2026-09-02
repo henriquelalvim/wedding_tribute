@@ -58,6 +58,7 @@ function Wedding() {
           wallet={wallet}
           wedding={wedding}
           chain={chain}
+          couple={content.couple}
         />
 
         <TributeForm

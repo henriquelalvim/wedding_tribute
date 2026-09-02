@@ -1,4 +1,5 @@
 import { STATUS } from "../config.js";
+import { displayName } from "../lib/format.js";
 
 function Clause({ who, text, fallback }) {
   return (
@@ -27,9 +28,17 @@ export default function VowsPanel({ ceremony, couple, emptyVow }) {
       </h2>
 
       <div className="mt-6 space-y-7">
-        <Clause who={couple.groomName} text={ceremony.groomVow} fallback={emptyVow} />
+        <Clause
+          who={displayName(ceremony.groomName, couple.groomName)}
+          text={ceremony.groomVow}
+          fallback={emptyVow}
+        />
         {married ? (
-          <Clause who={couple.brideName} text={ceremony.brideVow} fallback={emptyVow} />
+          <Clause
+            who={displayName(ceremony.brideName, couple.brideName)}
+            text={ceremony.brideVow}
+            fallback={emptyVow}
+          />
         ) : null}
       </div>
     </section>

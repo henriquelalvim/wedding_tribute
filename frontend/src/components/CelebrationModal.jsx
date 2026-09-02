@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { celebrate } from "../lib/celebrate.js";
-import { explorerTxUrl, formatDateTime } from "../lib/format.js";
+import { displayName, explorerTxUrl, formatDateTime } from "../lib/format.js";
 
 export default function CelebrationModal({ celebration, copy, couple, chain, emptyVow, onClose }) {
   const dialogRef = useRef(null);
@@ -74,13 +74,13 @@ export default function CelebrationModal({ celebration, copy, couple, chain, emp
           style={{ borderColor: "var(--color-rule)" }}
         >
           <div>
-            <p className="label">{couple.groomName}</p>
+            <p className="label">{displayName(celebration.groomName, couple.groomName)}</p>
             <p className="font-display mt-1.5 text-lg">
               {celebration.groomVow ? `“${celebration.groomVow}”` : emptyVow}
             </p>
           </div>
           <div>
-            <p className="label">{couple.brideName}</p>
+            <p className="label">{displayName(celebration.brideName, couple.brideName)}</p>
             <p className="font-display mt-1.5 text-lg">
               {celebration.brideVow ? `“${celebration.brideVow}”` : emptyVow}
             </p>

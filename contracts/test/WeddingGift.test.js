@@ -5,6 +5,8 @@ const PENDING = 0n;
 const PROPOSED = 1n;
 const MARRIED = 2n;
 
+const GROOM_NAME = "Matheus";
+const BRIDE_NAME = "Kellen";
 const GROOM_VOW = "Eu escolho voce, hoje e todos os dias.";
 const BRIDE_VOW = "Sim, mil vezes sim.";
 const TRIBUTE_NAME = "Padrinho Lucas";
@@ -134,48 +136,50 @@ describe("WeddingGift", function () {
   describe("propose", function () {
     it("rejects everyone while the groom is still unset", async function () {
       await expect(
-        contract.connect(groom).propose(GROOM_VOW),
+        contract.connect(groom).propose(GROOM_NAME, GROOM_VOW),
       ).to.be.revertedWithCustomError(contract, "NotGroom");
     });
 
-    it("lets the groom propose and records the vow", async function () {
+    it("lets the groom propose and records the name and vow", async function () {
       await setCouple();
-      await contract.connect(groom).propose(GROOM_VOW);
+      await contract.connect(groom).propose(GROOM_NAME, GROOM_VOW);
       expect(await contract.status()).to.equal(PROPOSED);
+      expect(await contract.groomName()).to.equal(GROOM_NAME);
       expect(await contract.groomVow()).to.equal(GROOM_VOW);
     });
 
-    it("emits Proposal with the groom and the vow", async function () {
+    it("emits Proposal with the groom, the name and the vow", async function () {
       await setCouple();
-      await expect(contract.connect(groom).propose(GROOM_VOW))
+      await expect(contract.connect(groom).propose(GROOM_NAME, GROOM_VOW))
         .to.emit(contract, "Proposal")
-        .withArgs(groom.address, GROOM_VOW, (t) => t > 0n);
+        .withArgs(groom.address, GROOM_NAME, GROOM_VOW, (t) => t > 0n);
     });
 
     it("rejects the bride and any stranger", async function () {
       await setCouple();
       await expect(
-        contract.connect(bride).propose(GROOM_VOW),
+        contract.connect(bride).propose(GROOM_NAME, GROOM_VOW),
       ).to.be.revertedWithCustomError(contract, "NotGroom");
       await expect(
-        contract.connect(stranger).propose(GROOM_VOW),
+        contract.connect(stranger).propose(GROOM_NAME, GROOM_VOW),
       ).to.be.revertedWithCustomError(contract, "NotGroom");
     });
 
-    it("allows re-proposing to fix the vow while still Proposed", async function () {
+    it("allows re-proposing to fix the name or vow while still Proposed", async function () {
       await setCouple();
-      await contract.connect(groom).propose("typo");
-      await contract.connect(groom).propose(GROOM_VOW);
+      await contract.connect(groom).propose("Mateus", "typo");
+      await contract.connect(groom).propose(GROOM_NAME, GROOM_VOW);
+      expect(await contract.groomName()).to.equal(GROOM_NAME);
       expect(await contract.groomVow()).to.equal(GROOM_VOW);
       expect(await contract.status()).to.equal(PROPOSED);
     });
 
     it("is locked forever once married", async function () {
       await setCouple();
-      await contract.connect(groom).propose(GROOM_VOW);
-      await contract.connect(bride).accept(BRIDE_VOW);
+      await contract.connect(groom).propose(GROOM_NAME, GROOM_VOW);
+      await contract.connect(bride).accept(BRIDE_NAME, BRIDE_VOW);
       await expect(
-        contract.connect(groom).propose("mudei de ideia"),
+        contract.connect(groom).propose(GROOM_NAME, "mudei de ideia"),
       ).to.be.revertedWithCustomError(contract, "InvalidStatus");
     });
 
@@ -183,16 +187,35 @@ describe("WeddingGift", function () {
       await setCouple();
       const tooLong = "a".repeat(281);
       await expect(
-        contract.connect(groom).propose(tooLong),
+        contract.connect(groom).propose(GROOM_NAME, tooLong),
       ).to.be.revertedWithCustomError(contract, "MessageTooLong");
-      await expect(contract.connect(groom).propose("a".repeat(280))).to.not.be.revert(ethers);
+      await expect(
+        contract.connect(groom).propose(GROOM_NAME, "a".repeat(280)),
+      ).to.not.be.revert(ethers);
+    });
+
+    it("rejects a name longer than the limit", async function () {
+      await setCouple();
+      await expect(
+        contract.connect(groom).propose("a".repeat(65), GROOM_VOW),
+      ).to.be.revertedWithCustomError(contract, "NameTooLong");
+      await expect(
+        contract.connect(groom).propose("a".repeat(64), GROOM_VOW),
+      ).to.not.be.revert(ethers);
+    });
+
+    it("allows an empty name, leaving it for the frontend to fall back on", async function () {
+      await setCouple();
+      await contract.connect(groom).propose("", GROOM_VOW);
+      expect(await contract.groomName()).to.equal("");
+      expect(await contract.groomVow()).to.equal(GROOM_VOW);
     });
   });
 
   describe("accept", function () {
     beforeEach(async function () {
       await setCouple();
-      await contract.connect(groom).propose(GROOM_VOW);
+      await contract.connect(groom).propose(GROOM_NAME, GROOM_VOW);
     });
 
     it("rejects everyone while the bride is still unset", async function () {
@@ -200,57 +223,81 @@ describe("WeddingGift", function () {
       const factory = await ethers.getContractFactory("WeddingGift");
       const fresh = await factory.connect(deployer).deploy();
       await fresh.connect(deployer).setGroom(groom.address);
-      await fresh.connect(groom).propose(GROOM_VOW);
+      await fresh.connect(groom).propose(GROOM_NAME, GROOM_VOW);
       await expect(
-        fresh.connect(bride).accept(BRIDE_VOW),
+        fresh.connect(bride).accept(BRIDE_NAME, BRIDE_VOW),
       ).to.be.revertedWithCustomError(fresh, "NotBride");
     });
 
-    it("marries the couple and records the vow and timestamp", async function () {
-      await contract.connect(bride).accept(BRIDE_VOW);
+    it("marries the couple and records the name, vow and timestamp", async function () {
+      await contract.connect(bride).accept(BRIDE_NAME, BRIDE_VOW);
       expect(await contract.status()).to.equal(MARRIED);
+      expect(await contract.brideName()).to.equal(BRIDE_NAME);
       expect(await contract.brideVow()).to.equal(BRIDE_VOW);
       expect(await contract.marriedAt()).to.be.greaterThan(0n);
     });
 
     it("rejects the groom and any stranger", async function () {
       await expect(
-        contract.connect(groom).accept(BRIDE_VOW),
+        contract.connect(groom).accept(BRIDE_NAME, BRIDE_VOW),
       ).to.be.revertedWithCustomError(contract, "NotBride");
       await expect(
-        contract.connect(stranger).accept(BRIDE_VOW),
+        contract.connect(stranger).accept(BRIDE_NAME, BRIDE_VOW),
       ).to.be.revertedWithCustomError(contract, "NotBride");
     });
 
     it("cannot be called twice", async function () {
-      await contract.connect(bride).accept(BRIDE_VOW);
+      await contract.connect(bride).accept(BRIDE_NAME, BRIDE_VOW);
       await expect(
-        contract.connect(bride).accept(BRIDE_VOW),
+        contract.connect(bride).accept(BRIDE_NAME, BRIDE_VOW),
       ).to.be.revertedWithCustomError(contract, "InvalidStatus");
     });
 
     it("rejects a vow longer than the limit", async function () {
       await expect(
-        contract.connect(bride).accept("a".repeat(281)),
+        contract.connect(bride).accept(BRIDE_NAME, "a".repeat(281)),
       ).to.be.revertedWithCustomError(contract, "MessageTooLong");
+    });
+
+    it("rejects a name longer than the limit", async function () {
+      await expect(
+        contract.connect(bride).accept("a".repeat(65), BRIDE_VOW),
+      ).to.be.revertedWithCustomError(contract, "NameTooLong");
+      await expect(
+        contract.connect(bride).accept("a".repeat(64), BRIDE_VOW),
+      ).to.not.be.revert(ethers);
+    });
+
+    it("allows an empty name, leaving it for the frontend to fall back on", async function () {
+      await contract.connect(bride).accept("", BRIDE_VOW);
+      expect(await contract.brideName()).to.equal("");
+      expect(await contract.brideVow()).to.equal(BRIDE_VOW);
     });
   });
 
   it("cannot accept before a proposal exists", async function () {
     await setCouple();
     await expect(
-      contract.connect(bride).accept(BRIDE_VOW),
+      contract.connect(bride).accept(BRIDE_NAME, BRIDE_VOW),
     ).to.be.revertedWithCustomError(contract, "InvalidStatus");
   });
 
   describe("MarriageCelebrated event", function () {
-    it("carries the couple, the timestamp and both vows", async function () {
+    it("carries the couple, both names, the timestamp and both vows", async function () {
       await setCouple();
-      await contract.connect(groom).propose(GROOM_VOW);
+      await contract.connect(groom).propose(GROOM_NAME, GROOM_VOW);
 
-      await expect(contract.connect(bride).accept(BRIDE_VOW))
+      await expect(contract.connect(bride).accept(BRIDE_NAME, BRIDE_VOW))
         .to.emit(contract, "MarriageCelebrated")
-        .withArgs(groom.address, bride.address, (t) => t > 0n, GROOM_VOW, BRIDE_VOW);
+        .withArgs(
+          groom.address,
+          bride.address,
+          GROOM_NAME,
+          BRIDE_NAME,
+          (t) => t > 0n,
+          GROOM_VOW,
+          BRIDE_VOW,
+        );
     });
   });
 
@@ -304,9 +351,9 @@ describe("WeddingGift", function () {
     it("works before, during and after the wedding", async function () {
       await contract.connect(guest).sendTribute("A", "antes");
       await setCouple();
-      await contract.connect(groom).propose(GROOM_VOW);
+      await contract.connect(groom).propose(GROOM_NAME, GROOM_VOW);
       await contract.connect(guest).sendTribute("B", "durante");
-      await contract.connect(bride).accept(BRIDE_VOW);
+      await contract.connect(bride).accept(BRIDE_NAME, BRIDE_VOW);
       await contract.connect(guest).sendTribute("C", "depois");
       expect(await contract.getTributeCount()).to.equal(3n);
     });
@@ -352,20 +399,24 @@ describe("WeddingGift", function () {
       expect(s.groom).to.equal(ethers.ZeroAddress);
       expect(s.bride).to.equal(ethers.ZeroAddress);
       expect(s.deployer).to.equal(deployer.address);
+      expect(s.groomName).to.equal("");
+      expect(s.brideName).to.equal("");
       expect(s.groomVow).to.equal("");
       expect(s.brideVow).to.equal("");
     });
 
-    it("reflects the married state with both vows", async function () {
+    it("reflects the married state with both names and vows", async function () {
       await setCouple();
-      await contract.connect(groom).propose(GROOM_VOW);
-      await contract.connect(bride).accept(BRIDE_VOW);
+      await contract.connect(groom).propose(GROOM_NAME, GROOM_VOW);
+      await contract.connect(bride).accept(BRIDE_NAME, BRIDE_VOW);
 
       const s = await contract.summary();
       expect(s.status).to.equal(MARRIED);
       expect(s.groom).to.equal(groom.address);
       expect(s.bride).to.equal(bride.address);
       expect(s.marriedAt).to.be.greaterThan(0n);
+      expect(s.groomName).to.equal(GROOM_NAME);
+      expect(s.brideName).to.equal(BRIDE_NAME);
       expect(s.groomVow).to.equal(GROOM_VOW);
       expect(s.brideVow).to.equal(BRIDE_VOW);
     });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { byteLength, friendlyError, sameAddress, shortAddress } from "../format.js";
+import { byteLength, displayName, friendlyError, sameAddress, shortAddress } from "../format.js";
 
 describe("byteLength", () => {
   it("counts UTF-8 bytes, which is what the contract limits", () => {
@@ -19,6 +19,17 @@ describe("shortAddress", () => {
   it("leaves short or missing values alone", () => {
     expect(shortAddress("0x1234")).toBe("0x1234");
     expect(shortAddress(null)).toBe("");
+  });
+});
+
+describe("displayName", () => {
+  it("prefers the name chosen on-chain", () => {
+    expect(displayName("Matheus", "Placeholder")).toBe("Matheus");
+  });
+
+  it("falls back to the site's own copy while nothing was chosen yet", () => {
+    expect(displayName("", "Matheus")).toBe("Matheus");
+    expect(displayName(undefined, "Matheus")).toBe("Matheus");
   });
 });
 

@@ -15,8 +15,8 @@ depósito, saldo ou saque.
 | Função | Quem pode chamar | Quando | O que faz |
 | --- | --- | --- | --- |
 | `setGroom(address)` / `setBride(address)` | só o deployer | uma vez cada, enquanto ainda não definido | atribui o noivo/a noiva — eles não existem como carteira até fazer login pela primeira vez |
-| `propose(vow)` | só o noivo | enquanto não estiver casado | grava os votos dele e muda o estado para `Proposed` |
-| `accept(vow)` | só a noiva | só se estiver `Proposed` | grava os votos dela, muda para `Married` e emite `MarriageCelebrated` |
+| `propose(name, vow)` | só o noivo | enquanto não estiver casado | grava o nome que ele escolheu assinar e os votos, muda o estado para `Proposed` |
+| `accept(name, vow)` | só a noiva | só se estiver `Proposed` | grava o nome dela e os votos, muda para `Married` e emite `MarriageCelebrated` |
 | `sendTribute(name, message)` | **qualquer pessoa** | sempre | grava uma homenagem no mural público, sem controle de acesso nenhum |
 | `hideTribute(id)` | só o deployer | sempre | oculta uma homenagem abusiva/spam do mural (não apaga o histórico) |
 
@@ -34,7 +34,12 @@ Detalhes que valem saber:
   antes de atribuir noivo/noiva no painel — senão a transação deles falha por falta de
   saldo.
 - **O pedido pode ser reescrito** enquanto a noiva não responder — dá para corrigir um
-  erro de digitação nos votos. Depois do sim, tudo trava para sempre.
+  erro de digitação nos votos (e no nome). Depois do sim, tudo trava para sempre.
+- **O nome de cada um é auto-declarado**, no momento do próprio `propose`/`accept` — o
+  noivo e a noiva escolhem como querem assinar, igual a uma homenagem. Até esse momento
+  (e se alguém deixar o campo em branco de propósito), a tela usa o nome estático de
+  `content.js` como reserva; assim que a chain tiver um nome, ele passa a valer em todo
+  o site (cabeçalho, votos, modal de celebração).
 - **O mural é público de verdade.** Qualquer carteira — noivo, noiva, deployer ou
   convidado anônimo — pode deixar uma homenagem. A única moderação possível é o
   deployer ocultar uma entrada abusiva depois.

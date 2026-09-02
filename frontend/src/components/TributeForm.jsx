@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { MAX_MESSAGE_BYTES, MAX_NAME_BYTES } from "../config.js";
 import { byteLength } from "../lib/format.js";
+import NameField from "./NameField.jsx";
 import VowField from "./VowField.jsx";
 
 /**
@@ -42,29 +43,14 @@ export default function TributeForm({ copy, chain, wallet, wedding, onSent }) {
       <p className="mt-3 text-sm leading-relaxed text-ink-soft">{copy.intro}</p>
 
       <form className="mt-6 space-y-5" onSubmit={submit}>
-        <div>
-          <div className="flex items-baseline justify-between gap-3">
-            <label htmlFor="tribute-name" className="label">
-              {copy.nameLabel}
-            </label>
-            <span
-              className="data text-[0.6875rem]"
-              style={{ color: nameTooLong ? "var(--color-seal)" : "var(--color-ink-soft)" }}
-            >
-              {byteLength(name)}/{MAX_NAME_BYTES}
-            </span>
-          </div>
-          <input
-            id="tribute-name"
-            className="field mt-2"
-            type="text"
-            autoComplete="off"
-            value={name}
-            disabled={busy}
-            placeholder={copy.namePlaceholder}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </div>
+        <NameField
+          id="tribute-name"
+          label={copy.nameLabel}
+          placeholder={copy.namePlaceholder}
+          value={name}
+          onChange={setName}
+          disabled={busy}
+        />
 
         <VowField
           id="tribute-message"

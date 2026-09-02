@@ -14,6 +14,8 @@ function toCeremony(summary) {
     groom: summary.groom,
     bride: summary.bride,
     deployer: summary.deployer,
+    groomName: summary.groomName,
+    brideName: summary.brideName,
     groomVow: summary.groomVow,
     brideVow: summary.brideVow,
   };
@@ -78,6 +80,8 @@ export function useWedding(wallet) {
     setCelebration({
       hash: hash ?? null,
       timestamp: summary.marriedAt,
+      groomName: summary.groomName,
+      brideName: summary.brideName,
       groomVow: summary.groomVow,
       brideVow: summary.brideVow,
     });
@@ -165,13 +169,13 @@ export function useWedding(wallet) {
   );
 
   const propose = useCallback(
-    (vow) => send("propose", (contract) => contract.propose(vow)),
+    (name, vow) => send("propose", (contract) => contract.propose(name, vow)),
     [send],
   );
 
   const accept = useCallback(
-    async (vow) => {
-      const receipt = await send("accept", (contract) => contract.accept(vow));
+    async (name, vow) => {
+      const receipt = await send("accept", (contract) => contract.accept(name, vow));
       if (!receipt) return null;
 
       // The event is read straight off the receipt: guaranteed to be there, and it
@@ -193,6 +197,8 @@ export function useWedding(wallet) {
         setCelebration({
           hash: receipt.hash,
           timestamp: event.args.timestamp,
+          groomName: event.args.groomName,
+          brideName: event.args.brideName,
           groomVow: event.args.groomVow,
           brideVow: event.args.brideVow,
         });

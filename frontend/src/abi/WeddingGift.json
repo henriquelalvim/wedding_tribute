@@ -97,6 +97,18 @@
       },
       {
         "indexed": false,
+        "internalType": "string",
+        "name": "groomName",
+        "type": "string"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "brideName",
+        "type": "string"
+      },
+      {
+        "indexed": false,
         "internalType": "uint256",
         "name": "timestamp",
         "type": "uint256"
@@ -125,6 +137,12 @@
         "internalType": "address",
         "name": "groom",
         "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
       },
       {
         "indexed": false,
@@ -222,6 +240,11 @@
     "inputs": [
       {
         "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
+      {
+        "internalType": "string",
         "name": "vow",
         "type": "string"
       }
@@ -239,6 +262,19 @@
         "internalType": "address",
         "name": "",
         "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "brideName",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
       }
     ],
     "stateMutability": "view",
@@ -338,6 +374,19 @@
   },
   {
     "inputs": [],
+    "name": "groomName",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
     "name": "groomVow",
     "outputs": [
       {
@@ -377,6 +426,11 @@
   },
   {
     "inputs": [
+      {
+        "internalType": "string",
+        "name": "name",
+        "type": "string"
+      },
       {
         "internalType": "string",
         "name": "vow",
@@ -475,6 +529,16 @@
             "internalType": "address",
             "name": "deployer",
             "type": "address"
+          },
+          {
+            "internalType": "string",
+            "name": "groomName",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "brideName",
+            "type": "string"
           },
           {
             "internalType": "string",
