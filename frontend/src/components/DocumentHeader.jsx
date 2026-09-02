@@ -21,13 +21,23 @@ export default function DocumentHeader({ registryLabel, chain, wallet }) {
         </div>
 
         {isConnected ? (
-          <span
-            className="data shrink-0 border px-3 py-2 text-xs"
-            style={{ borderColor: "var(--color-rule)" }}
-            title={account}
-          >
-            {shortAddress(account)}
-          </span>
+          <div className="flex shrink-0 items-stretch">
+            <span
+              className="data flex items-center border border-r-0 px-3 py-2 text-xs"
+              style={{ borderColor: "var(--color-rule)" }}
+              title={account}
+            >
+              {shortAddress(account)}
+            </span>
+            <button
+              type="button"
+              className="btn btn-quiet min-h-0 px-3 py-2 text-xs"
+              onClick={wallet.disconnect}
+              title="Desconectar carteira"
+            >
+              Sair
+            </button>
+          </div>
         ) : hasWallet ? (
           <button
             type="button"

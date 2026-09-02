@@ -111,6 +111,23 @@ export function useWallet() {
     return new BrowserProvider(provider).getSigner();
   }, []);
 
+  // There is no standard EIP-1193 "disconnect" — the wallet, not the site, owns that
+  // permission. wallet_revokePermissions (MetaMask 11+) does it for real when the
+  // wallet supports it; everywhere else this just forgets the account on our side,
+  // which is what every dApp's "disconnect" button actually does.
+  const disconnect = useCallback(async () => {
+    const provider = injected();
+    try {
+      await provider?.request({
+        method: "wallet_revokePermissions",
+        params: [{ eth_accounts: {} }],
+      });
+    } catch {
+      // Not supported by this wallet — fall through to the local forget below.
+    }
+    setAccount(null);
+  }, []);
+
   return {
     hasWallet,
     account,
@@ -120,6 +137,7 @@ export function useWallet() {
     isConnecting,
     error,
     connect,
+    disconnect,
     switchNetwork,
     getSigner,
   };
